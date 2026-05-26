@@ -1,0 +1,107 @@
+//serialreceive.comp
+
+//keith took this from here: 
+//https://forum.linuxcnc.org/18-computer/23166-arduino-i-o-with-linuxcnc
+
+component serialreceive              "Receiving 32 bits data from arduino";
+
+pin out bit bit-##[32] = false       "Output bits";
+
+option singleton yes;               
+option userspace yes;
+
+author "ArcEye arceye@mgware.co.uk";
+license "GPL";
+;;
+
+#include <stdio.h>    /* Standard input/output definitions */
+#include <stdlib.h> 
+#include <stdint.h>   /* Standard types */
+#include <string.h>   /* String function definitions */
+#include <unistd.h>   /* UNIX standard function definitions */
+#include <fcntl.h>    /* File control definitions */
+#include <errno.h>    /* Error number definitions */
+#include <termios.h>  /* POSIX terminal control definitions */
+#include <sys/ioctl.h>
+
+#define BAUDRATE B9600
+#define DEVICE "/dev/ttyACM0"
+#define _POSIX_SOURCE 1 /* POSIX compliant source */
+#define bitRead(value, bit) (((value) >> (bit)) & 0x01)
+#define bitSet(value, bit) ((value) |= (1UL << (bit)))
+#define bitClear(value, bit) ((value) &= ~(1UL << (bit)))
+#define bitWrite(value, bit, bitvalue) (bitvalue ? bitSet(value, bit) : bitClear(value, bit))
+
+int serialport_init();
+                             
+struct termios toptions;;       // port setup
+
+void user_mainloop(void)
+{
+int c, x, y, z;
+char ch;
+int fd = serialport_init();
+  
+    while (fd != -1) 
+        {
+        usleep(1000000);
+        FOR_ALL_INSTS() 
+            {
+            z = 0;
+            for(x = 0; x < 4; x++) // 4 packets 8 bits
+                {
+                read(fd,&ch,1); 
+                for(y = 0; y < 8 ; y++) bit(z++) = bitRead(ch, y);
+                }
+            // test - to show that bits were written
+            // comment out next 3 lines when using for real
+            for(x = 0; x < 32; x++) 
+                fprintf(stderr,"%d",bit(x));
+            fprintf(stderr,"\n");
+            }
+        }
+    close(fd);
+    exit(0);
+}
+
+
+//######################################################################
+
+int serialport_init()
+{
+int fd;
+ 
+    fd = open(DEVICE, O_RDWR | O_NOCTTY | O_NDELAY);
+    if (fd == -1)  
+        {
+        perror("init_serialport: Unable to open port ");
+        return -1;
+        }
+    if (tcgetattr(fd, &toptions) < 0) 
+        {
+        perror("init_serialport: Couldn't get term attributes");
+        return -1;
+        }
+    speed_t brate = BAUDRATE; 
+    cfsetispeed(&toptions, brate);
+    cfsetospeed(&toptions, brate);
+    // 8N1
+    toptions.c_cflag &= ~PARENB;
+    toptions.c_cflag &= ~CSTOPB;
+    toptions.c_cflag &= ~CSIZE;
+    toptions.c_cflag |= CS8;
+    // no flow control
+    toptions.c_cflag &= ~CRTSCTS;
+    toptions.c_cflag |= CREAD | CLOCAL;  // turn on READ & ignore ctrl lines
+    toptions.c_iflag &= ~(IXON | IXOFF | IXANY); // turn off s/w flow ctrl
+    toptions.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG); // make raw
+    toptions.c_oflag &= ~OPOST; // make raw
+    toptions.c_cc[VMIN]  = 0;
+    toptions.c_cc[VTIME] = 20;
+    if( tcsetattr(fd, TCSANOW, &toptions) < 0) 
+        {
+        perror("init_serialport: Couldn't set term attributes");
+        return -1;
+        }
+    return fd;
+}

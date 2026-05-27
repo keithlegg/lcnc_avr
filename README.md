@@ -1,20 +1,15 @@
 
-# LinuxCNC_ArduinoConnector
 
 
-
-THIS IS A FORK. DONT USE IT, GO TO THE ORIGINAL HERE:
+# THIS IS A FORK. DONT USE IT, GO TO THE ORIGINAL HERE:
 
 https://github.com/AlexmagToast/LinuxCNC_ArduinoConnector
 
 
-# Configuration
-To Install LinuxCNC_ArduinoConnector.ino on your Arduino first work through the settings in the beginning of the file.
-The Settings are commented in the file.
 
-To test your Arduino you can connect to it after flashing with the Arduino IDE. Set your Baudrate to 115200. 
-In the beginning the Arduino will Spam ```E0:0``` to the console. This is used to establish connection. 
-Just return ```E0:0``` to it. You can now communicate with the Arduino. Further info is in the Chapter [Serial Communication](#serial-communication-over-usb)
+
+
+
 
 
 # Installation

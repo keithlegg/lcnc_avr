@@ -10,6 +10,9 @@
 #define BIT_ON 0x30 //logic high
 #define BIT_OFF 0x31 //logic low
 
+#define TRUE    1
+#define FALSE   0
+
 
 
 void USART_Init( unsigned int ubrr);

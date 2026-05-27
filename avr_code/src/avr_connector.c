@@ -118,15 +118,20 @@ const int debounceDelay = 50;
 
 /***********************************************/
 
-/*
+ 
 // Function Prototypes
 void readCommands();
+void readsInputs();
+void readInputs();
+void reconnect();
+void comalive();
+
+/*
 void commandReceived(char cmd, uint16_t io, uint16_t value);
 void multiplexLeds();
 void readKeypad();
 uint8_t readAbsKnob();
-void readsInputs();
-void readInputs();
+
 void readAInputs();
 void readLPoti();
 void controlDLED(uint8_t Pin, uint8_t Stat);
@@ -136,8 +141,7 @@ void writeOutputs(uint8_t Pin, uint8_t Stat);
 void StatLedErr(uint8_t offtime, uint8_t ontime);
 void flushSerial();
 void sendData(char sig, uint8_t pin, uint8_t state);
-void reconnect();
-void comalive();
+
 void readEncoders();
 void readJoySticks();
 */
@@ -257,9 +261,9 @@ const float scalingFactor = 0.01;   // Scaling factor to control the impact of d
 
 
 #ifdef STATUSLED
-  const int StatLedPin = 13;                //Pin for Status LED
-  const int StatLedErrDel[] = {1000,10};   //Blink Timing for Status LED Error (no connection)
-  const int DLEDSTATUSLED = 0;              //set to 1 to use Digital LED instead. set StatLedPin to the according LED number in the chain.
+    const int StatLedPin = 13;                //Pin for Status LED
+    const int StatLedErrDel[] = {1000,10};   //Blink Timing for Status LED Error (no connection)
+    const int DLEDSTATUSLED = 0;              //set to 1 to use Digital LED instead. set StatLedPin to the according LED number in the chain.
 #endif
 
 
@@ -276,48 +280,48 @@ const float scalingFactor = 0.01;   // Scaling factor to control the impact of d
  
 //Variables for Saving States
 #ifdef INPUTS
-  int InState[Inputs];
-  int oldInState[Inputs];
-  unsigned long lastInputDebounce[Inputs];
+    int InState[Inputs];
+    int oldInState[Inputs];
+    unsigned long lastInputDebounce[Inputs];
 #endif
 
 #ifdef SINPUTS
-  int sInState[sInputs];
-  int soldInState[sInputs];
-  int togglesinputs[sInputs];
-  unsigned long lastsInputDebounce[sInputs];
+    int sInState[sInputs];
+    int soldInState[sInputs];
+    int togglesinputs[sInputs];
+    unsigned long lastsInputDebounce[sInputs];
 #endif
 
 #ifdef OUTPUTS
-  int OutState[Outputs];
-  int oldOutState[Outputs];
+    int OutState[Outputs];
+    int oldOutState[Outputs];
 #endif
 
 #ifdef PWMOUTPUTS
-  int OutPWMState[PwmOutputs];
-  int oldOutPWMState[PwmOutputs];
+    int OutPWMState[PwmOutputs];
+    int oldOutPWMState[PwmOutputs];
 #endif
 
 #ifdef AINPUTS
-  int oldAinput[AInputs];
-  unsigned long sumAinput[AInputs];
+    int oldAinput[AInputs];
+    unsigned long sumAinput[AInputs];
 #endif
 
 #ifdef LPOTIS
-  int Lpoti[LPotis];
-  int oldLpoti[LPotis];
+    int Lpoti[LPotis];
+    int oldLpoti[LPotis];
 #endif
 
 #ifdef BINSEL
-  int oldAbsEncState;
+    int oldAbsEncState;
 #endif
 
 #ifdef KEYPAD
-  byte KeyState = 0;
+    unsigned char KeyState = 0;
 #endif
 
 #ifdef MULTIPLEXLEDS
-  byte KeyLedStates[numVccPins*numGndPins];
+  unsigned char KeyLedStates[numVccPins*numGndPins];
 #endif
 
 #if QUADENCS == 1

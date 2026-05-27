@@ -4,6 +4,12 @@
 #include "serial.h"
 
 
+
+#define BUFFER_SIZE 2048
+
+
+
+/***********************************************/
 void USART_Init( unsigned int ubrr)
 {
     UBRR0H = (unsigned char)(ubrr>>8);
@@ -70,9 +76,9 @@ void sendData(char sig, int pin, int state)
 {
         USART_Transmit(sig);
         USART_Transmit(pin);
-        USART_Transmit(":");
+        USART_Transmit(':');
         USART_Transmit(state);
-        USART_Transmit("\n");
+        USART_Transmit('\n');
 }
 
 /***********************************************/
@@ -84,11 +90,9 @@ void flushSerial()
 }
 
 
+
+
 /*
-
-#define TRUE    1
-#define FALSE   0
-
 int uart_putchar(char, FILE *);
 int uart_getchar(FILE *);
 void uart_init(unsigned int);
@@ -105,63 +109,23 @@ typedef struct {
 
 void rbuf_init(rbuf_t *);
 rbuf_count_t rbuf_getcount(rbuf_t *);
-bool rbuf_isempty(rbuf_t *);
 void rbuf_insert(rbuf_t *, const rbuf_data_t);
 rbuf_data_t rbuf_remove(rbuf_t *);
 
-volatile bool command;      // Command line active? 
-volatile bool quit_early;   // Abort processing. 
+volatile unsigned char rbuf_isempty(rbuf_t *);
+volatile unsigned char command;      // BOOL Command line active? 
+volatile unsigned char quit_early;   // BOOL Abort processing. 
 
 rbuf_t  rbuf;
 char line[BUFFER_SIZE];
+
 FILE uart_str = FDEV_SETUP_STREAM(uart_putchar, uart_getchar, _FDEV_SETUP_RW);
+*/
 
-int main(void)
-{
-    int i;
-    char c;
 
-    sei();
-    uart_init(UART_BAUD);
 
-    printf_P(PSTR("\n\nHello World!\nType a line and see it printed back.\n"));
-    for (;;) {
 
-        command = TRUE;
-        printf_P(PSTR("> "));
-
-        c = fgetc(stdin);
-        i = 0;
-        while (i < sizeof(line)) {
-            if ((c == '\n') || (c == '\r')) {
-                line[i] = 0;
-                break;
-            }
-
-            line[i] = c;
-            i++;
-            printf("%c", c);
-            c = fgetc(stdin);
-        }
-        command = FALSE;
-
-        printf_P(PSTR("\n- "));
-
-        for (i = 0; i < strlen(line); i++) {
-            if (quit_early) {
-                printf_P(PSTR(" ABORT"));
-                break;
-            }
-            putchar(line[i]);
-            _delay_ms(300);
-        }
-        printf_P(PSTR("\n"));
-        quit_early = FALSE;
-    }
-    printf_P(PSTR("\nSomething barfed.\n"));
-    return 0;
-}
-
+/*
 
 void rbuf_init(rbuf_t* const buffer)
 {
@@ -287,5 +251,58 @@ int uart_putchar(char c, FILE *stream)
 
     return 0;
 }
+
+
+
+
+
+
+int main(void)
+{
+    int i;
+    char c;
+
+    sei();
+    uart_init(UART_BAUD);
+
+    printf_P(PSTR("\n\nHello World!\nType a line and see it printed back.\n"));
+    for (;;) {
+
+        command = TRUE;
+        printf_P(PSTR("> "));
+
+        c = fgetc(stdin);
+        i = 0;
+        while (i < sizeof(line)) {
+            if ((c == '\n') || (c == '\r')) {
+                line[i] = 0;
+                break;
+            }
+
+            line[i] = c;
+            i++;
+            printf("%c", c);
+            c = fgetc(stdin);
+        }
+        command = FALSE;
+
+        printf_P(PSTR("\n- "));
+
+        for (i = 0; i < strlen(line); i++) {
+            if (quit_early) {
+                printf_P(PSTR(" ABORT"));
+                break;
+            }
+            putchar(line[i]);
+            _delay_ms(300);
+        }
+        printf_P(PSTR("\n"));
+        quit_early = FALSE;
+    }
+    printf_P(PSTR("\nSomething barfed.\n"));
+    return 0;
+}
+
+
 
 */

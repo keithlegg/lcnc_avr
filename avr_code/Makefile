@@ -7,7 +7,7 @@ SOURCES=src/avr_connector.c src/serial.c
 
 
 ###########################
-CC=avr-gcc
+CC=avr-g++
 
 
 OBJCOPY=avr-objcopy

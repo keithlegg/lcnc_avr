@@ -1,9 +1,12 @@
 
 /*
-  LinuxCNC_ArduinoConnector
-  By Alexander Richter, info@theartoftinkering.com 2022
+  LinuxCNC_AVR connector 
 
-  This Software is used as IO Expansion for LinuxCNC. Here i am using a Mega 2560.
+  Created By Alexander Richter 
+  Ruined by Keith Legg May 2026 
+
+
+  This Software is used as IO Expansion for LinuxCNC. 
 
   It is NOT intended for timing and security relevant IO's. Don't use it for Emergency Stops or Endstop switches!
 
@@ -68,16 +71,11 @@ Communication Status      = 'E' -read/Write  -Pin State: 0:0
 #define F_CPU 16000000UL //AVR Clock Speed in MHZ
 #define FOSC 16000000    // Clock Speed
 
-//UART STUFF
-#define BAUD 57600
-#define MYUBRR FOSC/16/BAUD-1
-
-
-#define BIT_ON 0x30 //logic high
-#define BIT_OFF 0x31 //logic low
 
 
 #include <util/delay.h>
+
+#include "serial.h"
 
 
 //### global Variables setup###
@@ -114,6 +112,10 @@ uint16_t value = 0;
 //#define AINPUTS           
 //#define PWMOUTPUTS 
 
+
+const int timeout = 10000;   // timeout after 10 sec not receiving Stuff
+const int debounceDelay = 50;
+
 /***********************************************/
 
 /*
@@ -140,77 +142,6 @@ void readEncoders();
 void readJoySticks();
 */
 
-/***********************************************/
-
-void USART_Init( unsigned int ubrr)
-{
-    UBRR0H = (unsigned char)(ubrr>>8);
-    UBRR0L = (unsigned char)ubrr;
-    /*Enable receiver and transmitter */
-    UCSR0B = (1<<RXEN0)|(1<<TXEN0);
-
-}
-
-
-/***********************************************/
-
-static uint8_t USART_receive(void)
-{
-    while (!(UCSR0A & (1 << RXC0))) {/*Busy wait.*/}
-    return UDR0;
-}
-
-/***********************************************/
-
-void USART_Transmit( unsigned char data )
-{
-  while ( !( UCSR0A & (1<<UDRE0)) );
-  UDR0 = data;
-}
-
-
-/***********************************************/
-
-void print_byte( uint8_t data){
-   uint8_t i = 0;
-
-   for (i=0; i<=7; i++) {
-       //if ( !!(data & (1 << ii)) ){  // LSB
-       if ( !!(data & (1 << (7 - i))) ){  // MSB
-           USART_Transmit( BIT_OFF );
-       }else{
-           USART_Transmit( BIT_ON );
-       }
-    }
-    //USART_Transmit( CHAR_TERM ); //CHAR_TERM = new line  
-    //USART_Transmit( 0xd ); //0xd = carriage return
-}
-
-/***********************************************/
-
-
-void print_byte_16( uint16_t data){
-   uint8_t i = 0;
-
-   for (i=0; i<=15; i++) {
-       //if ( !!(data & (1 << ii)) ){  // LSB
-       if ( !!(data & (1 << (15 - i))) ){  // MSB
-           USART_Transmit( BIT_OFF );
-       }else{
-           USART_Transmit( BIT_ON );
-       }
-    }
-    //USART_Transmit( CHAR_TERM ); //CHAR_TERM = new line  
-    //USART_Transmit( 0xd ); //0xd = carriage return
-}
-
-
-
-
-
-
-
-
 
 
 /***********************************************/
@@ -221,7 +152,6 @@ void print_byte_16( uint16_t data){
   #define Inputs 2             
   int InPinmap[] = {8,9};
 #endif
-
  
 #ifdef SINPUTS
   #define sInputs 1            
@@ -233,6 +163,7 @@ void print_byte_16( uint16_t data){
   int OutPinmap[] = {11,12};
 #endif
 
+/*
 #ifdef PWMOUTPUTS
   #define PwmOutputs 2              
   int PwmOutPinmap[] = {12,11};
@@ -240,14 +171,10 @@ void print_byte_16( uint16_t data){
 
 #ifdef AINPUTS
   #define AInputs 1
-  int AInPinmap[] = {0};                //Potentiometer for SpindleSpeed override
-  int smooth = 200;                     //number of samples to denoise ADC, try lower numbers on your setup 200 worked good for me.
+  int AInPinmap[] = {0};                
+  int smooth = 200;                   
 #endif
 
- 
-
-
-/*
 
 #ifdef LPOTIS
   const int LPotis = 2;
@@ -345,9 +272,6 @@ const float scalingFactor = 0.01;   // Scaling factor to control the impact of d
 /************************************************/
 /************************************************/
 
-//###Misc Settings###
-const int timeout = 10000;   // timeout after 10 sec not receiving Stuff
-const int debounceDelay = 50;
 
  
 //Variables for Saving States
@@ -749,23 +673,6 @@ void reconnect(){
 }
 */
 
- 
-void sendData(char sig, int pin, int state){
-        USART_Transmit(sig);
-        USART_Transmit(pin);
-        USART_Transmit(":");
-        USART_Transmit(state);
-        USART_Transmit("\n");
-}
-
-void flushSerial()
-{
-    //while (Serial.available() > 0) {
-    //Serial.read();
-    //}
-}
- 
-
 
 
 /*
@@ -1003,53 +910,68 @@ void commandReceived(char cmd, uint16_t io, uint16_t value){
 void readCommands()
 {
     unsigned char current;
-    /*
-    while(Serial.available() > 0){
-        current = Serial.read();
-        switch(state){
+     
+    //while(Serial.available() > 0)
+    //{
+        
+        //current = Serial.read();
+
+        /*
+        switch(state)
+        {
             case STATE_CMD:
                    cmd = current;
                    state = STATE_IO;
                    bufferIndex = 0;
-                break;
+            break;
+            
             case STATE_IO:
-                if(isDigit(current)){
+                if(isDigit(current))
+                {
                     inputbuffer[bufferIndex++] = current;
-                }else if(current == ':'){
+                }else if(current == ':')
+                {
                     inputbuffer[bufferIndex] = 0;
                     io = atoi(inputbuffer);
                     state = STATE_VALUE;
                     bufferIndex = 0;
 
                 }
-                else{
+                else
+                {
                     #ifdef DEBUG
-                    Serial.print("Ungültiges zeichen: ");
-                    Serial.println(current);
+                    //Serial.print("Ungültiges zeichen: ");
+                    //Serial.println(current);
                     #endif
                 }
-                break;
+            break;
+            
             case STATE_VALUE:
-                if(isDigit(current)){
+                
+                if(isDigit(current))
+                {
                     inputbuffer[bufferIndex++] = current;
                 }
-                else if(current == '\n'){
+                else if(current == '\n')
+                {
                     inputbuffer[bufferIndex] = 0;
                     value = atoi(inputbuffer);
                     commandReceived(cmd, io, value);
                     state = STATE_CMD;
                 }
-                else{
+                else
+                {
                   #ifdef DEBUG
-                  Serial.print("Ungültiges zeichen: ");
-                  Serial.println(current);
+                    //Serial.print("Ungültiges zeichen: ");
+                    //Serial.println(current);
                   #endif
 
                 }
-                break;
+            break;
         }
+        */
 
-    }*/
+    //} 
 }
  
 

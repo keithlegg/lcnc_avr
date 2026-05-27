@@ -2,7 +2,7 @@
 PROJECT=avrconn
 
 
-SOURCES=src/avr_connector.c
+SOURCES=src/avr_connector.c src/serial.c
 
 
 

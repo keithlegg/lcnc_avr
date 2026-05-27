@@ -1,54 +1,12 @@
 
 # LinuxCNC_ArduinoConnector
 
-<img src="/ArduinoChip.svg" width="250" align="right">
-
-By Alexander Richter, info@theartoftinkering.com 2022  
-please consider supporting me on Patreon:  
-https://www.patreon.com/theartoftinkering  
-
-Website: https://theartoftinkering.com  
-Youtube: https://youtube.com/@theartoftinkering
 
 
-This Project enables you to connect an Arduino to LinuxCNC and provides as many IO's as you could ever wish for.
-This Software is used as IO Expansion for LinuxCNC.
+THIS IS A FORK. DONT USE IT, GO TO THE ORIGINAL HERE:
 
-## It is NOT intended for timing and security relevant IO's. Don't use it for Emergency Stops or Endstop switches! ##
+https://github.com/AlexmagToast/LinuxCNC_ArduinoConnector
 
-
-You can create as many digital & analog Inputs, Outputs and PWM Outputs as your Arduino can handle.
-It also supports Digital LEDs such as WS2812 or PL9823. This way you can have as many LEDs as you want and you can also define the color of them with just one Pin.
-
-
-| Currently the Software Supports:              | Arduino Mega | Ardunio Micro  | Ardunio Uno |
-| --------------------------------------------- | ------------ | -------------  | ----------- |
-| Analog Inputs                                 | Up to 16     | Up to 12       | Up to 6     |
-| Digital Inputs                                | Up to 52     | Up to 20       | Up to 12    |
-| Digital Outputs                               | Up to 52     | Up to 20       | Up to 12    |
-| PWM Outputs                                   | Up to 15     | Up to 7        | Up to 6     |
-| Digital RGB LEDs like WS2812 or PL9823        | ~ 1000       | ~ 1000         | ~ 1000      |
-| latching Potentiometers / Selector Switches   | Up to 16     | Up to 12       | Up to 6     |
-| binary encoded Selector Switch                | 1            | 1              | 1           |
-| Quadrature Encoder Input                      | 3 or more    | 1 or more      | 1 or more   |
-| Joystick Support (2Axis)                      | 8            | 6              | 3           |
-| Matrix Keyboard                               | 1            | 1              | 1           |
-| Multiplexed LEDs                              | ~ 1000       | ~ 1000         | ~ 1000      |
-
-
-Planned Features: 
-- Temperature Probes using 4.7k Pullup-Resistor
-- Support for i2C LCDs
-
-# Compatiblity
-This software works with LinuxCNC 2.8, 2.9 and 2.10. For 2.8, however, you have to change #!/usr/bin/python3.9 in the first line of arduino.py to #!/usr/bin/python2.7.
-
-You should be able to use any Arduino or Arduino compatible Boards, currently Tested are:
-Arduino Mega 2560
-Arduino Nano
-Arduino Duemilanove
-
-Other Arduino compatible Boards like Teensy should work fine also.
 
 # Configuration
 To Install LinuxCNC_ArduinoConnector.ino on your Arduino first work through the settings in the beginning of the file.

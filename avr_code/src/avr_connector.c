@@ -77,10 +77,68 @@ Communication Status      = 'E' -read/Write  -Pin State: 0:0
 #define BIT_OFF 0x31 //logic low
 
 
-
 #include <util/delay.h>
 
 
+//### global Variables setup###
+
+unsigned long oldmillis = 0;
+unsigned long newcom = 0;
+unsigned long lastcom = 0;
+int connectionState = 0;
+
+#define STATE_CMD 0
+#define STATE_IO 1
+#define STATE_VALUE 2
+
+
+unsigned char state = STATE_CMD;
+unsigned char inputbuffer[5];
+unsigned char bufferIndex = 0;
+unsigned char cmd = 0;
+
+uint16_t io = 0;
+uint16_t value = 0;
+
+
+
+
+//#define DEBUG
+
+#define INPUTS 
+#define STATUSLED
+#define OUTPUTS 
+#define SINPUTS 
+
+//#define LPOTIS
+//#define AINPUTS           
+//#define PWMOUTPUTS 
+
+/***********************************************/
+
+/*
+// Function Prototypes
+void readCommands();
+void commandReceived(char cmd, uint16_t io, uint16_t value);
+void multiplexLeds();
+void readKeypad();
+uint8_t readAbsKnob();
+void readsInputs();
+void readInputs();
+void readAInputs();
+void readLPoti();
+void controlDLED(uint8_t Pin, uint8_t Stat);
+void initDLED();
+void writePwmOutputs(uint8_t Pin, uint8_t Stat);
+void writeOutputs(uint8_t Pin, uint8_t Stat);
+void StatLedErr(uint8_t offtime, uint8_t ontime);
+void flushSerial();
+void sendData(char sig, uint8_t pin, uint8_t state);
+void reconnect();
+void comalive();
+void readEncoders();
+void readJoySticks();
+*/
 
 /***********************************************/
 
@@ -148,10 +206,6 @@ void print_byte_16( uint16_t data){
 
 
 
-/******************************************************/
-/******************************************************/
-/******************************************************/
-/******************************************************/
 
 
 
@@ -159,64 +213,42 @@ void print_byte_16( uint16_t data){
 
 
 
-//###################################################IO's###################################################
+/***********************************************/
 
 
-#define INPUTS                  //Use Arduino IO's as Inputs. Define how many Inputs you want in total and then which Pins you want to be Inputs.
+ 
 #ifdef INPUTS
-  #define Inputs 1              //number of inputs using internal Pullup resistor. (short to ground to trigger)
+  #define Inputs 2             
   int InPinmap[] = {8,9};
 #endif
 
-/*
-                                //Use Arduino IO's as Toggle Inputs, which means Inputs (Buttons for example) keep HIGH State after Release and Send LOW only after beeing Pressed again.
-#define SINPUTS                 //Define how many Toggle Inputs you want in total and then which Pins you want to be Toggle Inputs.
+ 
 #ifdef SINPUTS
-  int sInputs = 1;              //number of inputs using internal Pullup resistor. (short to ground to trigger)
+  #define sInputs 1            
   int sInPinmap[] = {10};
 #endif
 
-#define OUTPUTS                     //Use Arduino IO's as Outputs. Define how many Outputs you want in total and then which Pins you want to be Outputs.
 #ifdef OUTPUTS
-  int Outputs = 2;              //number of outputs
+  #define Outputs 2              
   int OutPinmap[] = {11,12};
 #endif
 
-//#define PWMOUTPUTS                     //Use Arduino PWM Capable IO's as PWM Outputs. Define how many  PWM Outputs you want in total and then which Pins you want to be  PWM Outputs.
 #ifdef PWMOUTPUTS
-  int PwmOutputs = 2;              //number of outputs
+  #define PwmOutputs 2              
   int PwmOutPinmap[] = {12,11};
 #endif
 
-//#define AINPUTS                       //Use Arduino ADC's as Analog Inputs. Define how many Analog Inputs you want in total and then which Pins you want to be Analog Inputs.
-                                        //Note that Analog Pin numbering is different to the Print on the PCB.
 #ifdef AINPUTS
-  int AInputs = 1;
+  #define AInputs 1
   int AInPinmap[] = {0};                //Potentiometer for SpindleSpeed override
   int smooth = 200;                     //number of samples to denoise ADC, try lower numbers on your setup 200 worked good for me.
 #endif
 
-*/
+ 
 
-
-
-/*This is a special mode of AInputs. My machine had originally Selector Knobs with many Pins on the backside to select different Speed Settings.
-I turned them into a "Potentiometer" by connecting all Pins with 10K Resistors in series. Then i applied GND to the first and 5V to the last Pin.
-Now the Selector is part of an Voltage Divider and outputs different Voltage for each Position. This function generates Pins for each Position in Linuxcnc Hal.
-
-It can happen, that when you switch position, that the selector is floating for a brief second. This might be detected as Position 0.
-This shouldn't be an issue in most usecases, but think about that in your application.
-
-
-
-Connect it to an Analog In Pin of your Arduino and define how many of these you want.
-Then in the Array, {which Pin, How many Positions}
-Note that Analog Pin numbering is different to the Print on the PCB.
-
-*/
 
 /*
-//#define LPOTIS
+
 #ifdef LPOTIS
   const int LPotis = 2;
   const int LPotiPins[LPotis][2] = {
@@ -296,7 +328,7 @@ const float scalingFactor = 0.01;   // Scaling factor to control the impact of d
 // Define an Pin you want to connect the LED to. it will be set as Output indipendand of the OUTPUTS function, so don't use Pins twice.
 // If you use Digital LED's such as WS2812 or PL9823 (only works if you set up the DLED settings below) you can also define a position of the LED. In this case StatLedPin will set the number of the Digital LED Chain.
 
-#define STATUSLED
+
 #ifdef STATUSLED
   const int StatLedPin = 13;                //Pin for Status LED
   const int StatLedErrDel[] = {1000,10};   //Blink Timing for Status LED Error (no connection)
@@ -310,10 +342,8 @@ const float scalingFactor = 0.01;   // Scaling factor to control the impact of d
 
 
 
-
-
-//#define DEBUG
-//#######################################   END OF CONFIG     ###########################
+/************************************************/
+/************************************************/
 
 //###Misc Settings###
 const int timeout = 10000;   // timeout after 10 sec not receiving Stuff
@@ -399,49 +429,9 @@ const int debounceDelay = 50;
     unsigned long lastUpdateTime[JoySticks*2] = {0}; // Store the time of the last update for each potentiometer
 #endif
 
-//### global Variables setup###
-//Please don't touch them
-unsigned long oldmillis = 0;
-unsigned long newcom = 0;
-unsigned long lastcom = 0;
-int connectionState = 0;
 
-#define STATE_CMD 0
-#define STATE_IO 1
-#define STATE_VALUE 2
-
-
-unsigned char state = STATE_CMD;
-unsigned char inputbuffer[5];
-unsigned char bufferIndex = 0;
-unsigned char cmd = 0;
-
-uint16_t io = 0;
-uint16_t value = 0;
-
-/*
-// Function Prototypes
-void readCommands();
-void commandReceived(char cmd, uint16_t io, uint16_t value);
-void multiplexLeds();
-void readKeypad();
-uint8_t readAbsKnob();
-void readsInputs();
-void readInputs();
-void readAInputs();
-void readLPoti();
-void controlDLED(uint8_t Pin, uint8_t Stat);
-void initDLED();
-void writePwmOutputs(uint8_t Pin, uint8_t Stat);
-void writeOutputs(uint8_t Pin, uint8_t Stat);
-void StatLedErr(uint8_t offtime, uint8_t ontime);
-void flushSerial();
-void sendData(char sig, uint8_t pin, uint8_t state);
-void reconnect();
-void comalive();
-void readEncoders();
-void readJoySticks();
-*/
+/************************************************/
+/************************************************/
 
 void setup() 
 {
@@ -507,9 +497,11 @@ void setup()
 
 }//end setup
 
-
-/*
-void loop() {
+/************************************************/
+/************************************************/
+ 
+void loop() 
+{
     readCommands(); //receive and execute Commands
     comalive(); //if nothing is received for 10 sec. blink warning LED
 
@@ -545,7 +537,11 @@ void loop() {
       multiplexLeds();// cycle through the 2D LED Matrix}
     #endif
 }
-*/
+
+
+
+/************************************************/
+/************************************************/
 
 /*  
 #ifdef JOYSTICK
@@ -641,52 +637,60 @@ void readEncoders(){
 #endif
 */
 
-/*  
-void comalive(){
-  if(lastcom == 0){ //no connection yet. send E0:0 periodicly and wait for response
-    while (lastcom == 0){
-      readCommands();
-      flushSerial();
-      Serial.println("E0:0");
-      delay(200);
-      #ifdef STATUSLED
-        StatLedErr(1000,1000);
-      #endif
-    }
-    connectionState = 1;
-    flushSerial();
-    #ifdef DEBUG
-      Serial.println("first connect");
-    #endif
-  }
-  if(millis() - lastcom > timeout){
-  #ifdef STATUSLED
-     StatLedErr(500,200);
-  #endif
-      if(connectionState == 1){
+ 
+void comalive()
+{
+    if(lastcom == 0){ //no connection yet. send E0:0 periodicly and wait for response
+        while (lastcom == 0){
+          readCommands();
+          flushSerial();
+          //Serial.println("E0:0");
+          _delay_ms(200);
+          //#ifdef STATUSLED
+          //  StatLedErr(1000,1000);
+          //#endif
+        }
+        connectionState = 1;
+        flushSerial();
         #ifdef DEBUG
-          Serial.println("disconnected");
+          //Serial.println("first connect");
         #endif
-        connectionState = 2;
-      }
-
-   }
-   else{
-      connectionState=1;
-      #ifdef STATUSLED
-        if(DLEDSTATUSLED == 1){
-          #ifdef DLED
-            controlDLED(StatLedPin, 1);
-          #endif
-        }
-        else{
-          digitalWrite(StatLedPin, HIGH);
-        }
-      #endif
     }
+    
+    /*
+    if(millis() - lastcom > timeout)
+    {
+        #ifdef STATUSLED
+           StatLedErr(500,200);
+        #endif
+          if(connectionState == 1){
+            #ifdef DEBUG
+              //Serial.println("disconnected");
+            #endif
+            connectionState = 2;
+          }
+
+       }
+       else{
+          connectionState=1;
+          #ifdef STATUSLED
+            if(DLEDSTATUSLED == 1){
+              #ifdef DLED
+                controlDLED(StatLedPin, 1);
+              #endif
+            }
+            else{
+              //digitalWrite(StatLedPin, HIGH);
+            }
+          #endif
+      }
+      */
+
 }
 
 
+
+/* 
 void reconnect(){
   #ifdef DEBUG
     Serial.println("reconnected");
@@ -745,20 +749,22 @@ void reconnect(){
 }
 */
 
-/*
+ 
 void sendData(char sig, int pin, int state){
-        Serial.print(sig);
-        Serial.print(pin);
-        Serial.print(":");
-        Serial.println(state);
+        USART_Transmit(sig);
+        USART_Transmit(pin);
+        USART_Transmit(":");
+        USART_Transmit(state);
+        USART_Transmit("\n");
 }
 
-void flushSerial(){
-  while (Serial.available() > 0) {
-  Serial.read();
-  }
+void flushSerial()
+{
+    //while (Serial.available() > 0) {
+    //Serial.read();
+    //}
 }
-*/
+ 
 
 
 
@@ -821,45 +827,53 @@ void readAInputs(){
 #endif
 */
 
-/*  
+ 
 #ifdef INPUTS
-void readInputs(){
-    for(int i= 0;i<Inputs; i++){
-      int State = digitalRead(InPinmap[i]);
-      if(InState[i]!= State && millis()- lastInputDebounce[i] > debounceDelay){
-        InState[i] = State;
-        sendData('I',InPinmap[i],InState[i]);
+  void readInputs()
+  {
+      /*   
+      for(int i= 0;i<Inputs; i++){
+        int State = digitalRead(InPinmap[i]);
+        if(InState[i]!= State && millis()- lastInputDebounce[i] > debounceDelay){
+          InState[i] = State;
+          sendData('I',InPinmap[i],InState[i]);
 
-      lastInputDebounce[i] = millis();
-      }
-    }
-}
-#endif
-#ifdef SINPUTS
-void readsInputs(){
-  for(int i= 0;i<sInputs; i++){
-    sInState[i] = digitalRead(sInPinmap[i]);
-    if (sInState[i] != soldInState[i] && millis()- lastsInputDebounce[i] > debounceDelay){
-      // Button state has changed and debounce delay has passed
-
-      if (sInState[i] == LOW || soldInState[i]== -1) { // Stuff after || is only there to send States at Startup
-        // Button has been pressed
-        togglesinputs[i] = !togglesinputs[i];  // Toggle the LED state
-
-        if (togglesinputs[i]) {
-          sendData('I',sInPinmap[i],togglesinputs[i]);  // Turn the LED on
+        lastInputDebounce[i] = millis();
         }
-        else {
-          sendData('I',sInPinmap[i],togglesinputs[i]);   // Turn the LED off
-        }
-      }
-      soldInState[i] = sInState[i];
-      lastsInputDebounce[i] = millis();
-    }
+      }*/
+
   }
-}
 #endif
-*/
+
+ 
+#ifdef SINPUTS
+    void readsInputs()
+    {/*
+        for(int i= 0;i<sInputs; i++)
+        {
+            sInState[i] = digitalRead(sInPinmap[i]);
+            if (sInState[i] != soldInState[i] && millis()- lastsInputDebounce[i] > debounceDelay){
+              // Button state has changed and debounce delay has passed
+
+              if (sInState[i] == LOW || soldInState[i]== -1) { // Stuff after || is only there to send States at Startup
+                // Button has been pressed
+                togglesinputs[i] = !togglesinputs[i];  // Toggle the LED state
+
+                if (togglesinputs[i]) {
+                  sendData('I',sInPinmap[i],togglesinputs[i]);  // Turn the LED on
+                }
+                else {
+                  sendData('I',sInPinmap[i],togglesinputs[i]);   // Turn the LED off
+                }
+              }
+              soldInState[i] = sInState[i];
+              lastsInputDebounce[i] = millis();
+          }
+        }
+        */
+    }
+#endif
+ 
 
 /*  
 #ifdef BINSEL
@@ -984,10 +998,12 @@ void commandReceived(char cmd, uint16_t io, uint16_t value){
     Serial.println(value);
   #endif
 }
+*/
 
-
-void readCommands(){
-    byte current;
+void readCommands()
+{
+    unsigned char current;
+    /*
     while(Serial.available() > 0){
         current = Serial.read();
         switch(state){
@@ -1033,9 +1049,9 @@ void readCommands(){
                 break;
         }
 
-    }
+    }*/
 }
-*/
+ 
 
 /******************************************************/
 /******************************************************/

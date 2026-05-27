@@ -3,6 +3,9 @@
 //keith took this from here: 
 //https://forum.linuxcnc.org/18-computer/23166-arduino-i-o-with-linuxcnc
 
+
+
+
 component serialreceive              "Receiving 32 bits data from arduino";
 
 pin out bit bit-##[32] = false       "Output bits";

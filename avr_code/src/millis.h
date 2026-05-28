@@ -5,9 +5,10 @@
  * License: GNU GPL v3 (see License_GPL-3.0.txt) or MIT (see License_MIT.txt)
  * Web: http://blog.zakkemble.net/millisecond-tracking-library-for-avr/
  */
-
 #ifndef MILLIS_H_
 #define MILLIS_H_
+
+
 
 /**
 * Milliseconds data type \n
@@ -17,6 +18,7 @@
 * unsigned long			- 49.71 days			- 4 bytes \n
 * unsigned long long	- 584.9 million years	- 8 bytes
 */
+
 typedef unsigned long millis_t;
 
 #define MILLIS_TIMER0 0 /**< Use timer0. */

@@ -57,13 +57,12 @@ Communication Status      = 'E' -read/Write  -Pin State: 0:0
 
 #include <avr/io.h>
 
-#define F_CPU 16000000UL //AVR Clock Speed in MHZ
-#define FOSC 16000000    // Clock Speed
-
-
+#include "common.h"
 
 #include <util/delay.h>
 
+#include "common.h"
+#include "millis.h"
 #include "serial.h"
 
 
@@ -303,7 +302,7 @@ void reconnect()
 #ifdef STATUSLED
     void StatLedErr(uint8_t offtime, uint8_t ontime)
     {
-      /*
+       
       unsigned long newMillis = millis();
 
       //if (newMillis - oldmillis >= offtime)
@@ -311,8 +310,6 @@ void reconnect()
       {
           oldmillis = newMillis;
       }
-      */
-
     }
 #endif
 
@@ -323,33 +320,38 @@ void reconnect()
 #endif
  
 #ifdef INPUTS
-  void readInputs()
-  {
-      /*   
-      for(int i= 0;i<Inputs; i++){
-        int State = digitalRead(InPinmap[i]);
-        if(InState[i]!= State && millis()- lastInputDebounce[i] > debounceDelay){
-          InState[i] = State;
-          sendData('I',InPinmap[i],InState[i]);
+    void readInputs()
+    {
+           
+        for(int i= 0;i<Inputs; i++)
+        {
+            /*
+            int State = digitalRead(InPinmap[i]);
+            if(InState[i]!= State && millis()- lastInputDebounce[i] > debounceDelay)
+            {
+                InState[i] = State;
+                sendData('I',InPinmap[i],InState[i]);
+                lastInputDebounce[i] = millis();
+            }*/
+        } 
 
-        lastInputDebounce[i] = millis();
-        }
-      }*/
-
-  }
+    }
 #endif
 
  
 #ifdef SINPUTS
     void readsInputs()
-    {/*
+    { 
         for(int i= 0;i<sInputs; i++)
         {
-            sInState[i] = digitalRead(sInPinmap[i]);
+            //sInState[i] = digitalRead(sInPinmap[i]);
+
             if (sInState[i] != soldInState[i] && millis()- lastsInputDebounce[i] > debounceDelay){
               // Button state has changed and debounce delay has passed
-
-              if (sInState[i] == LOW || soldInState[i]== -1) { // Stuff after || is only there to send States at Startup
+              
+              // Stuff after || is only there to send States at Startup
+              if (sInState[i] == LOW || soldInState[i]== -1) 
+              { 
                 // Button has been pressed
                 togglesinputs[i] = !togglesinputs[i];  // Toggle the LED state
 
@@ -364,7 +366,7 @@ void reconnect()
               lastsInputDebounce[i] = millis();
           }
         }
-        */
+         
     }
 #endif
  
@@ -474,6 +476,8 @@ void readCommands()
 
 int main (void)
 {
+    millis_init();
+
     setup();
 
     DDRB = 0xff;     

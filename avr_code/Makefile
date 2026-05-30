@@ -2,7 +2,7 @@
 PROJECT=avrconn
 
 
-SOURCES=src/connector.cpp src/serial.cpp src/millis.cpp
+SOURCES=src/serial.cpp src/millis.cpp src/connector.cpp
 
 
 
@@ -22,12 +22,20 @@ HIGH_FUSE=0x99
 EXT_FUSE=0xff
 
 
+#CFLAGS=-mmcu=$(MMCU) 
+
+
 CFLAGS=-mmcu=$(MMCU) -O2 -Wall -Os -std=gnu99 -funsigned-char \
 	-funsigned-bitfields -fpack-struct -fshort-enums -MD -MP -MT -I./
 
+ 
+ 
+
 $(PROJECT).hex: $(PROJECT).out
 	@echo "Creating hex file..."
-	$(OBJCOPY) -j .text -O ihex $(PROJECT).out $(PROJECT).hex
+	#$(OBJCOPY) -j .text -O ihex -R .eeprom $(PROJECT).out $(PROJECT).hex
+	$(OBJCOPY) -j .text -j .data -O ihex $(PROJECT).out $(PROJECT).hex
+
 	rm -f ./*.d
 	rm -f ./*.out
 	@echo

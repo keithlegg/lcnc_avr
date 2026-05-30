@@ -53,29 +53,37 @@ Communication Status      = 'E' -read/Write  -Pin State: 0:0
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+//#pragma GCC optimize ("O0")
 
 
 #include <avr/io.h>
+#include <string.h>
+
+//#include <stdlib.h>
+#include <ctype.h>
+
 
 #include "common.h"
-
 #include <util/delay.h>
+
 
 #include "common.h"
 #include "millis.h"
 #include "serial.h"
 
 
+
+
 #define STATE_CMD 0
 #define STATE_IO 1
 #define STATE_VALUE 2
 
-//#define DEBUG
+#define DEBUG
 
 #define INPUTS 
 #define OUTPUTS 
-#define SINPUTS 
-#define STATUSLED
+//#define SINPUTS 
+//#define STATUSLED
 
 const int timeout = 10000;   // timeout after 10 sec not receiving Stuff
 const int debounceDelay = 50;
@@ -205,7 +213,7 @@ void setup()
     #ifdef STATUSLED
       //pinMode(StatLedPin, OUTPUT);
     #endif
-    
+
 
 
 }//end setup
@@ -216,15 +224,14 @@ void setup()
 void loop() 
 {
     readCommands(); //receive and execute Commands
-    comalive(); //if nothing is received for 10 sec. blink warning LED
+    comalive();     //if nothing is received for 10 sec. blink warning LED
 
-    #ifdef INPUTS
-      readInputs(); //read Inputs & send data
-    #endif
-
-    #ifdef SINPUTS
-      readsInputs(); //read Inputs & send data
-    #endif
+    //KEEP THESE// #ifdef INPUTS
+    //KEEP THESE//   readInputs(); //read Inputs & send data
+    //KEEP THESE// #endif
+    //KEEP THESE// #ifdef SINPUTS
+    //KEEP THESE//   readsInputs(); //read Inputs & send data
+    //KEEP THESE// #endif
 
 }
 
@@ -241,8 +248,9 @@ void comalive()
         {
           readCommands();
           flushSerial();
-          
-          //Serial.println("E0:0");
+
+          UART_write_str("E0:0");
+
           _delay_ms(200);
 
           #ifdef STATUSLED
@@ -251,8 +259,9 @@ void comalive()
         }
         connectionState = 1;
         flushSerial();
+
         #ifdef DEBUG
-          //Serial.println("first connect");
+            UART_write_str_pgm("first connect");
         #endif
     }
 }
@@ -263,29 +272,31 @@ void comalive()
 void reconnect()
 {
     #ifdef DEBUG
-        Serial.println("reconnected");
-        Serial.println("resending Data");
+        UART_write_str("reconnected");
+        UART_write_str("resending Data");
     #endif
 
     #ifdef INPUTS
-      for (int x = 0; x < Inputs; x++){
-        InState[x]= -1;
-      }
+        for (int x = 0; x < Inputs; x++)
+        {
+            InState[x]= -1;
+        }
     #endif
 
     #ifdef SINPUTS
-      for (int x = 0; x < sInputs; x++){
-        soldInState[x]= -1;
-        togglesinputs[x] = 0;
-      }
+        for (int x = 0; x < sInputs; x++)
+        {
+            soldInState[x]= -1;
+            togglesinputs[x] = 0;
+        }
     #endif
 
     #ifdef INPUTS
-      readInputs(); //read Inputs & send data
+        readInputs(); //read Inputs & send data
     #endif
 
     #ifdef SINPUTS
-      readsInputs(); //read Inputs & send data
+        readsInputs(); //read Inputs & send data
     #endif
 
 
@@ -325,14 +336,20 @@ void reconnect()
            
         for(int i= 0;i<Inputs; i++)
         {
-            /*
-            int State = digitalRead(InPinmap[i]);
+            
+            //int State = digitalRead(InPinmap[i]);
+            int State = 1; //keith hacked this 
+
             if(InState[i]!= State && millis()- lastInputDebounce[i] > debounceDelay)
             {
                 InState[i] = State;
-                sendData('I',InPinmap[i],InState[i]);
+                //sendData('I',InPinmap[i],InState[i]);
+                UART_transmit('I');
+                UART_transmit(InPinmap[i]);
+                UART_transmit(InState[i]);                
+                
                 lastInputDebounce[i] = millis();
-            }*/
+            }
         } 
 
     }
@@ -376,7 +393,7 @@ void reconnect()
  
 void commandReceived(char cmd, uint16_t io, uint16_t value)
 {
-    /*  
+     
     #ifdef OUTPUTS
     if(cmd == 'O'){
       writeOutputs(io,value);
@@ -394,13 +411,13 @@ void commandReceived(char cmd, uint16_t io, uint16_t value)
 
 
     #ifdef DEBUG
-      Serial.print("I Received= ");
-      Serial.print(cmd);
-      Serial.print(io);
-      Serial.print(":");
-      Serial.println(value);
+        UART_write_str("I Received= ");
+        UART_transmit(cmd);
+        UART_transmit(io);
+        UART_write_str(":");
+        UART_transmit(value);
     #endif
-    */
+     
 }
 
 
@@ -411,9 +428,9 @@ void readCommands()
     //while(Serial.available() > 0)
     //{
         
-        //current = Serial.read();
+        current = UART_receive();
 
-        /*
+        
         switch(state)
         {
             case STATE_CMD:
@@ -423,13 +440,13 @@ void readCommands()
             break;
             
             case STATE_IO:
-                if(isDigit(current))
+                if(isdigit(current))
                 {
                     inputbuffer[bufferIndex++] = current;
                 }else if(current == ':')
                 {
                     inputbuffer[bufferIndex] = 0;
-                    io = atoi(inputbuffer);
+                    //io = atoi(inputbuffer);
                     state = STATE_VALUE;
                     bufferIndex = 0;
 
@@ -445,28 +462,33 @@ void readCommands()
             
             case STATE_VALUE:
                 
-                if(isDigit(current))
+                if(isdigit(current))
                 {
                     inputbuffer[bufferIndex++] = current;
                 }
                 else if(current == '\n')
                 {
                     inputbuffer[bufferIndex] = 0;
-                    value = atoi(inputbuffer);
+                    
+                    //value = atoi(inputbuffer);
+               
                     commandReceived(cmd, io, value);
+
+                    
+
                     state = STATE_CMD;
                 }
                 else
                 {
                   #ifdef DEBUG
-                    //Serial.print("Ungültiges zeichen: ");
-                    //Serial.println(current);
+                      //UART_write_str("Ungültiges zeichen: ");
+                      //UART_transmit(current);
                   #endif
 
                 }
             break;
         }
-        */
+         
 
     //} 
 }
@@ -474,20 +496,25 @@ void readCommands()
 
 /******************************************************/
 
+
 int main (void)
 {
+ 
     millis_init();
 
     setup();
 
     DDRB = 0xff;     
-
+ 
     USART_Init(MYUBRR);
-   
+    
+
+
     while (1)
     {
-     
         loop();
+
+        _delay_ms(800); 
     }
     
 } 

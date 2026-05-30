@@ -1,40 +1,101 @@
 
 #include <avr/io.h>
+#include <string.h>
 
+#include <avr/pgmspace.h>
+
+// #define PROGMEM_READ_BYTE(x) pgm_read_byte(x)
+// #define PROGMEM_READ_WORD(x) pgm_read_word(x)
+
+#include "common.h"
 #include "serial.h"
 
 
 
-#define BUFFER_SIZE 2048
+#define BUFFER_SIZE 16
+
+
+
+
+/***********************************************/
+
+
+//  DOES NOT WORK IF STRING IS LONGER THAN 2 or 3 CHARS 
+ 
+void UART_write_str(char *data) 
+{ 
+
+    while(*data)
+    { 
+        while ( !( UCSR0A & (1<<UDRE0)) );
+        UDR0 = *data++; 
+    }
+
+} 
+ 
+
+
+ 
+void UART_write_str2(char *data) 
+{ 
+    int i =0;
+    while (data[i] != 0x00)
+    {
+        UART_transmit(data[i]);
+        i++;
+    }
+
+}
+ 
+
+/***********************************************/
+//this sends data from flash to uart 
+
+void UART_write_str_pgm(const char* s)
+{
+    uint8_t c;
+
+    for (uint8_t i=0; i < strlen_P(s); i++)
+    {
+        c = pgm_read_byte(&(s[i]));
+        while (( UCSR0A & (1<<UDRE0))  == 0){};
+        UDR0 = c;          
+    }
+
+}  
+
 
 
 
 /***********************************************/
 void USART_Init( unsigned int ubrr)
 {
+
     UBRR0H = (unsigned char)(ubrr>>8);
     UBRR0L = (unsigned char)ubrr;
-    
+
     //Enable receiver and transmitter 
     UCSR0B = (1<<RXEN0)|(1<<TXEN0);
 
+    //UCSR0A = (1 << U2X0); // enable 2x mode
+
 }
 
 
 /***********************************************/
 
-static uint8_t USART_receive(void)
+void UART_transmit( unsigned char data )
 {
-    while (!(UCSR0A & (1 << RXC0))) {/*Busy wait.*/}
+    while ( !( UCSR0A & (1<<UDRE0)) );
+    UDR0 = data;
+}
+
+
+/***********************************************/
+uint8_t UART_receive(void)
+{
+    while (!(UCSR0A & (1 << RXC0))) {}
     return UDR0;
-}
-
-/***********************************************/
-
-void USART_Transmit( unsigned char data )
-{
-  while ( !( UCSR0A & (1<<UDRE0)) );
-  UDR0 = data;
 }
 
 
@@ -46,13 +107,13 @@ void print_byte( uint8_t data){
    for (i=0; i<=7; i++) {
        //if ( !!(data & (1 << ii)) ){  // LSB
        if ( !!(data & (1 << (7 - i))) ){  // MSB
-           USART_Transmit( BIT_OFF );
+           UART_transmit( BIT_OFF );
        }else{
-           USART_Transmit( BIT_ON );
+           UART_transmit( BIT_ON );
        }
     }
-    //USART_Transmit( CHAR_TERM ); //CHAR_TERM = new line  
-    //USART_Transmit( 0xd ); //0xd = carriage return
+    //UART_transmit( CHAR_TERM ); //CHAR_TERM = new line  
+    //UART_transmit( 0xd ); //0xd = carriage return
 }
 
 /***********************************************/
@@ -62,24 +123,24 @@ void print_byte_16( uint16_t data){
    for (i=0; i<=15; i++) {
        //if ( !!(data & (1 << ii)) ){  // LSB
        if ( !!(data & (1 << (15 - i))) ){  // MSB
-           USART_Transmit( BIT_OFF );
+           UART_transmit( BIT_OFF );
        }else{
-           USART_Transmit( BIT_ON );
+           UART_transmit( BIT_ON );
        }
     }
-    //USART_Transmit( CHAR_TERM ); //CHAR_TERM = new line  
-    //USART_Transmit( 0xd ); //0xd = carriage return
+    //UART_transmit( CHAR_TERM ); //CHAR_TERM = new line  
+    //UART_transmit( 0xd ); //0xd = carriage return
 }
 
 
 /***********************************************/
 void sendData(char sig, int pin, int state)
 {
-        USART_Transmit(sig);
-        USART_Transmit(pin);
-        USART_Transmit(':');
-        USART_Transmit(state);
-        USART_Transmit('\n');
+        UART_transmit(sig);
+        UART_transmit(pin);
+        UART_transmit(':');
+        UART_transmit(state);
+        UART_transmit('\n');
 }
 
 /***********************************************/

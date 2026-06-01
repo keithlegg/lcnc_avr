@@ -152,6 +152,18 @@ void USART_Init( unsigned int ubrr)
 
 }
 
+/***********************************************/
+void UART_transmit16( uint16_t data )
+{
+
+
+    while ( !( UCSR0A & (1<<UDRE0)) );
+    UDR0 = data >> 8;
+    
+    while ( !( UCSR0A & (1<<UDRE0)) );
+    UDR0 = data & 0xff;;
+
+}
 
 /***********************************************/
 
@@ -172,16 +184,16 @@ char UART_receive(void)
 
 
 /***********************************************/
-char UART_receive_stream(unsigned char * pdata)
+uint16_t UART_receive_stream(unsigned char * pdata)
 {
+    uint16_t numbytes = 0;
+
     while (!(UCSR0A & (1 << RXC0))) {}
 
-    //for (uint8_t i=0; i < strlen(s); i++)
-
     *pdata = UDR0;
-    pdata++;          
+    pdata++; numbytes++;         
 
-
+    return numbytes;
 }
 
 
@@ -200,8 +212,6 @@ void print_byte( uint8_t data)
            UART_transmit( BIT_ON );
        }
     }
-    //UART_transmit( CHAR_TERM ); //CHAR_TERM = new line  
-    //UART_transmit( 0xd ); //0xd = carriage return
 }
 
 /***********************************************/
@@ -217,8 +227,6 @@ void print_byte_16( uint16_t data)
            UART_transmit( BIT_ON );
        }
     }
-    //UART_transmit( CHAR_TERM ); //CHAR_TERM = new line  
-    //UART_transmit( 0xd ); //0xd = carriage return
 }
 
 

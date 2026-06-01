@@ -19,6 +19,7 @@
 
 void USART_Init( unsigned int ubrr);
 
+void UART_transmit16( uint16_t data );
 
 void UART_transmit( unsigned char* data );
 void UART_transmit( unsigned char data );
@@ -38,23 +39,27 @@ void println( char data);
 void println( unsigned char* data);
 void println( const char* data);
 
-
-char UART_receive(void);
-char UART_receive_stream(unsigned char * pdata);
-
-
-
-
-
-
-
-
-
-
 void print_byte( uint8_t data);
 void print_byte_16( uint16_t data);
+
+
+char UART_receive(void);
+uint16_t UART_receive_stream(unsigned char * pdata);
+
+
+
+
+
 void sendData(char sig, int pin, int state);
 void flushSerial();
+
+
+
+
+
+
+
+
 
 
 

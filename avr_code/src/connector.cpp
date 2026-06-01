@@ -58,9 +58,9 @@ Communication Status      = 'E' -read/Write  -Pin State: 0:0
 
 #include <avr/interrupt.h>
 #include <avr/io.h>
-#include <string.h>
 
-//#include <stdlib.h>
+#include <stdlib.h>
+#include <string.h>
 #include <ctype.h>
 
 
@@ -81,7 +81,7 @@ Communication Status      = 'E' -read/Write  -Pin State: 0:0
 #define STATE_IO 1
 #define STATE_VALUE 2
 
-#define DEBUG
+//#define DEBUG
 
 #define INPUTS 
 #define OUTPUTS 
@@ -97,7 +97,8 @@ unsigned long lastcom    = 0;
 int connectionState      = 0;
 
 unsigned char state = STATE_CMD;
-unsigned char inputbuffer[5];
+
+char inputbuffer[5];
 unsigned char bufferIndex = 0;
 unsigned char cmd = 0;
 
@@ -252,7 +253,7 @@ void comalive()
           readCommands();
           flushSerial();
 
-          UART_write_str("E0:0");
+          println("E0:0");
 
           _delay_ms(200);
 
@@ -264,7 +265,7 @@ void comalive()
         flushSerial();
 
         #ifdef DEBUG
-            UART_write_str_pgm("first connect");
+            println("first connect");
         #endif
     }
 }
@@ -275,8 +276,8 @@ void comalive()
 void reconnect()
 {
     #ifdef DEBUG
-        UART_write_str("reconnected");
-        UART_write_str("resending Data");
+        println("reconnected");
+        println("resending Data");
     #endif
 
     #ifdef INPUTS
@@ -432,7 +433,7 @@ void readCommands()
      
     //while(Serial.available() > 0)
     //{
-        //UART_receive_stream(current);
+        UART_receive_stream(&current);
         
         switch(state)
         {
@@ -449,7 +450,9 @@ void readCommands()
                 }else if(current == ':')
                 {
                     inputbuffer[bufferIndex] = 0;
-                    //io = atoi(inputbuffer);
+
+                    io = atoi(inputbuffer);
+                    
                     state = STATE_VALUE;
                     bufferIndex = 0;
 
@@ -457,14 +460,14 @@ void readCommands()
                 else
                 {
                     #ifdef DEBUG
-                        //println("german debug: ");
-                        //println(current);
+                        println("german debug: ");
+                        println(current);
                     #endif
                 }
             break;
             
             case STATE_VALUE:
-                
+    
                 if(isdigit(current))
                 {
                     inputbuffer[bufferIndex++] = current;
@@ -473,7 +476,7 @@ void readCommands()
                 {
                     inputbuffer[bufferIndex] = 0;
                     
-                    //value = atoi(inputbuffer);
+                    value = atoi(inputbuffer);
                
                     commandReceived(cmd, io, value);
 
@@ -500,6 +503,7 @@ void readCommands()
 /******************************************************/
 
 unsigned char current[100] = "";
+uint16_t num = 0;
 
 int main (void)
 {
@@ -514,15 +518,23 @@ int main (void)
     
     millis_resume();
     
+    unsigned char eee;
 
 
     while (1)
     {
         //loop();
-        
-        println("heloo fuckers");
 
-        //UART_receive_stream(current); 
+        //num = UART_receive_stream(&eee); 
+        //print_byte_16(1111);
+        UART_transmit16(1111);
+
+        //00000100 01010111
+
+        UART_transmit(0x0a);
+        UART_transmit(0x0d);
+
+
         //if(sizeof(current)>5)
         //{
         //    UART_write_str(sizeof(current));

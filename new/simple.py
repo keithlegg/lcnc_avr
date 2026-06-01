@@ -212,8 +212,8 @@ while True:
                     pass
 
                 elif cmd == 'E':
-                        arduino.write(b"E0:0\n")
-                        if (DEBUG):print("Sending E0:0 to establish contact")
+                    arduino.write(b"E0:0\n")
+                    if (DEBUG):print("Sending E0:0 to establish contact")
                 else: pass
     
 

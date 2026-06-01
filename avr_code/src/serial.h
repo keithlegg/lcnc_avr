@@ -17,17 +17,39 @@
 #define FALSE   0
 
 
-void UART_write_str_pgm(const char s[]);
-void UART_write_str(char *data);
-
-void UART_write_str2(char *data);
-
-
-
 void USART_Init( unsigned int ubrr);
 
-uint8_t UART_receive(void);
+
+void UART_transmit( unsigned char* data );
 void UART_transmit( unsigned char data );
+
+//void UART_write_str(char data); 
+void UART_write_str(char *data);
+void UART_write_str(unsigned char data); 
+void UART_write_str(const char *data);
+
+void UART_write_str_pgm(const char s[]);
+
+void print( const char* data);
+void print( unsigned char* data);
+void print( char data);
+
+void println( char data);
+void println( unsigned char* data);
+void println( const char* data);
+
+
+char UART_receive(void);
+char UART_receive_stream(unsigned char * pdata);
+
+
+
+
+
+
+
+
+
 
 void print_byte( uint8_t data);
 void print_byte_16( uint16_t data);

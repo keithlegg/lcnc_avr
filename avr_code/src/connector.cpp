@@ -56,6 +56,7 @@ Communication Status      = 'E' -read/Write  -Pin State: 0:0
 //#pragma GCC optimize ("O0")
 
 
+#include <avr/interrupt.h>
 #include <avr/io.h>
 #include <string.h>
 
@@ -68,7 +69,9 @@ Communication Status      = 'E' -read/Write  -Pin State: 0:0
 
 
 #include "common.h"
+
 #include "millis.h"
+
 #include "serial.h"
 
 
@@ -115,7 +118,7 @@ void comalive();
  
 void writeOutputs(uint8_t Pin, uint8_t Stat);
 void StatLedErr(uint8_t offtime, uint8_t ontime);
-void sendData(char sig, uint8_t pin, uint8_t state);
+void send_data(char sig, uint8_t pin, uint8_t state);
  
 
 
@@ -343,7 +346,7 @@ void reconnect()
             if(InState[i]!= State && millis()- lastInputDebounce[i] > debounceDelay)
             {
                 InState[i] = State;
-                //sendData('I',InPinmap[i],InState[i]);
+                //send_data('I',InPinmap[i],InState[i]);
                 UART_transmit('I');
                 UART_transmit(InPinmap[i]);
                 UART_transmit(InState[i]);                
@@ -373,10 +376,10 @@ void reconnect()
                 togglesinputs[i] = !togglesinputs[i];  // Toggle the LED state
 
                 if (togglesinputs[i]) {
-                  sendData('I',sInPinmap[i],togglesinputs[i]);  // Turn the LED on
+                  send_data('I',sInPinmap[i],togglesinputs[i]);  // Turn the LED on
                 }
                 else {
-                  sendData('I',sInPinmap[i],togglesinputs[i]);   // Turn the LED off
+                  send_data('I',sInPinmap[i],togglesinputs[i]);   // Turn the LED off
                 }
               }
               soldInState[i] = sInState[i];
@@ -421,15 +424,15 @@ void commandReceived(char cmd, uint16_t io, uint16_t value)
 }
 
 
+
+
 void readCommands()
 {
     unsigned char current;
      
     //while(Serial.available() > 0)
     //{
-        
-        current = UART_receive();
-
+        //UART_receive_stream(current);
         
         switch(state)
         {
@@ -454,8 +457,8 @@ void readCommands()
                 else
                 {
                     #ifdef DEBUG
-                    //Serial.print("Ungültiges zeichen: ");
-                    //Serial.println(current);
+                        //println("german debug: ");
+                        //println(current);
                     #endif
                 }
             break;
@@ -496,10 +499,11 @@ void readCommands()
 
 /******************************************************/
 
+unsigned char current[100] = "";
 
 int main (void)
 {
- 
+    sei(); 
     millis_init();
 
     setup();
@@ -508,18 +512,26 @@ int main (void)
  
     USART_Init(MYUBRR);
     
+    millis_resume();
+    
 
 
     while (1)
     {
-        loop();
+        //loop();
+        
+        println("heloo fuckers");
+
+        //UART_receive_stream(current); 
+        //if(sizeof(current)>5)
+        //{
+        //    UART_write_str(sizeof(current));
+        //    
+        //} 
 
         _delay_ms(800); 
+
     }
     
 } 
-
-/******************************************************/
-
-
 

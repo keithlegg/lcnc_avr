@@ -4,25 +4,44 @@
 
 #include <avr/pgmspace.h>
 
-// #define PROGMEM_READ_BYTE(x) pgm_read_byte(x)
-// #define PROGMEM_READ_WORD(x) pgm_read_word(x)
-
 #include "common.h"
 #include "serial.h"
 
 
 
-#define BUFFER_SIZE 16
+#define BUFFER_SIZE 100
 
 
+/*
+    begin()
+    print()
+    println()
+    read()
+
+    if(Serial)
+    available()
+    availableForWrite()
+    end()
+    find()
+    findUntil()
+    flush()
+    parseFloat()
+    parseInt()
+    peek()
+    readBytes()
+    readBytesUntil()
+    readString()
+    readStringUntil()
+    setTimeout()
+    write()
+    serialEvent()
+*/
 
 
 /***********************************************/
 
 
-//  DOES NOT WORK IF STRING IS LONGER THAN 2 or 3 CHARS 
- 
-void UART_write_str(char *data) 
+void UART_write_str(const char *data) 
 { 
 
     while(*data)
@@ -32,11 +51,23 @@ void UART_write_str(char *data)
     }
 
 } 
- 
+  
+
+/******/
+void UART_write_str(unsigned char *data) 
+{ 
+
+    while(*data)
+    { 
+        while ( !( UCSR0A & (1<<UDRE0)) );
+        UDR0 = *data++; 
+    }
+
+} 
 
 
- 
-void UART_write_str2(char *data) 
+/******/
+void UART_write_str(char *data) 
 { 
     int i =0;
     while (data[i] != 0x00)
@@ -66,6 +97,46 @@ void UART_write_str_pgm(const char* s)
 
 
 
+/***********************************************/
+void println( const char* data)
+{
+    UART_write_str(data);
+    UART_transmit(0x0a);
+    UART_transmit(0x0d);
+}
+
+
+void println( unsigned char* data)
+{
+    UART_write_str(data);
+    UART_transmit(0x0a);
+    UART_transmit(0x0d);
+}
+
+void println( char data)
+{
+    UART_transmit(data);
+    UART_transmit(0x0a);
+    UART_transmit(0x0d);
+}
+
+
+void print( const char* data)
+{
+    UART_write_str(data);
+}
+
+
+void print( unsigned char* data)
+{
+    UART_write_str(data);
+}
+
+void print( char data)
+{
+    UART_transmit(data);
+}
+
 
 /***********************************************/
 void USART_Init( unsigned int ubrr)
@@ -92,16 +163,33 @@ void UART_transmit( unsigned char data )
 
 
 /***********************************************/
-uint8_t UART_receive(void)
+char UART_receive(void)
 {
     while (!(UCSR0A & (1 << RXC0))) {}
     return UDR0;
+
 }
 
 
 /***********************************************/
+char UART_receive_stream(unsigned char * pdata)
+{
+    while (!(UCSR0A & (1 << RXC0))) {}
 
-void print_byte( uint8_t data){
+    //for (uint8_t i=0; i < strlen(s); i++)
+
+    *pdata = UDR0;
+    pdata++;          
+
+
+}
+
+
+
+/***********************************************/
+
+void print_byte( uint8_t data)
+{
    uint8_t i = 0;
 
    for (i=0; i<=7; i++) {
@@ -117,7 +205,8 @@ void print_byte( uint8_t data){
 }
 
 /***********************************************/
-void print_byte_16( uint16_t data){
+void print_byte_16( uint16_t data)
+{
    uint8_t i = 0;
 
    for (i=0; i<=15; i++) {
@@ -134,13 +223,14 @@ void print_byte_16( uint16_t data){
 
 
 /***********************************************/
-void sendData(char sig, int pin, int state)
+//specific to the connector tool 
+void send_data(char sig, int pin, int state)
 {
-        UART_transmit(sig);
-        UART_transmit(pin);
-        UART_transmit(':');
-        UART_transmit(state);
-        UART_transmit('\n');
+    UART_transmit(sig);
+    UART_transmit(pin);
+    UART_transmit(':');
+    UART_transmit(state);
+    UART_transmit('\n');
 }
 
 /***********************************************/

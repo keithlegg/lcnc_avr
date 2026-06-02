@@ -1,10 +1,12 @@
 
-#include <avr/io.h>
-#include <string.h>
+#include "common.h"
 
+#include <avr/delay.h>
+#include <avr/io.h>
 #include <avr/pgmspace.h>
 
-#include "common.h"
+#include <string.h>
+
 #include "serial.h"
 
 
@@ -17,9 +19,10 @@
     print()
     println()
     read()
+    available()
+
 
     if(Serial)
-    available()
     availableForWrite()
     end()
     find()
@@ -36,6 +39,66 @@
     write()
     serialEvent()
 */
+
+
+/*
+    directly manipulate the bits in your C code:
+
+    Check if ready to send a byte     : while (!(UCSR1A & (1 << UDRE1)));
+    Send data byte                    : UDR1 = my_data_byte;
+    Wait for transmission to finish   : while (!(UCSR1A & (1 << TXC1)));
+    Clear Transmit Complete Flag      : UCSR1A |= (1 << TXC1);
+
+*/
+
+/***********************************************/
+void init_debug_led(void)
+{
+    DDRB |= (1<<7);
+}
+
+/***********************************************/
+void init_uart( unsigned int ubrr)
+{
+
+    UBRR0H = (unsigned char)(ubrr>>8);
+    UBRR0L = (unsigned char)ubrr;
+
+    //Enable receiver and transmitter 
+    UCSR0B = (1<<RXEN0)|(1<<TXEN0);
+
+
+    // Set frame format to 8 data bits, no parity, 1 stop bit
+    //UCSR2C |= (1 << UCSZ20) | (1 << UCSZ21);
+
+    // enable 2x mode
+    //UCSR0A = (1 << U2X0); 
+
+}
+
+/***********************************************/
+void init_rx_interrupts(void)
+{
+
+   // Enable TX, RX, and RX interrupt 
+   //UCSR0B = (1<<TXEN0) | (1<<RXEN0) | (1<<RXCIE0);
+   
+   UCSR0B = (1<<RXEN0) | (1<<RXCIE0);
+   //UCSR0B |= (1<<RXCIE0);  
+
+}
+
+
+/***********************************************/
+void debug_led(void)
+{
+    PORTB |= (1<<7);
+    _delay_ms(100);
+
+    PORTB &= !(1<<7);
+    _delay_ms(100);
+
+}
 
 
 /***********************************************/
@@ -138,19 +201,6 @@ void print( char data)
 }
 
 
-/***********************************************/
-void USART_Init( unsigned int ubrr)
-{
-
-    UBRR0H = (unsigned char)(ubrr>>8);
-    UBRR0L = (unsigned char)ubrr;
-
-    //Enable receiver and transmitter 
-    UCSR0B = (1<<RXEN0)|(1<<TXEN0);
-
-    //UCSR0A = (1 << U2X0); // enable 2x mode
-
-}
 
 /***********************************************/
 void UART_transmit16( uint16_t data )

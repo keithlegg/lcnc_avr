@@ -17,7 +17,12 @@
 #define FALSE   0
 
 
-void USART_Init( unsigned int ubrr);
+void init_debug_led(void);
+void init_rx_interrupts(void);
+void init_uart( unsigned int ubrr);
+
+
+void debug_led( void );
 
 void UART_transmit16( uint16_t data );
 

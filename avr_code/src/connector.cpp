@@ -527,6 +527,47 @@ void readCommands()
 unsigned char current[100] = "";
 uint16_t num = 0;
 
+int main(void)
+{
+   init_rx_interrupts();
+   init_debug_led();
+   
+   sei();
+
+   while(1)
+   {
+      _delay_ms(100);
+
+   } 
+
+
+}
+
+
+/*
+$0032 USART0 RX      USART0 Rx Complete
+$0034 USART0 UDRE    USART0 Data Register Empty
+$0036 USART0 TX      USART0 Tx Complete
+*/
+
+ISR(USART0_RX_vect)
+{
+    /*  
+        //println("receive interrupt occur");
+        while (!(UCSR1A & (1 << RXC1))) {};
+
+        char ReceivedByte;
+        ReceivedByte = UDR1; // Fetch the received byte value into the variable "ByteReceived"
+        UDR1 = ReceivedByte; // Echo back the received byte back to the computer
+    */
+
+    debug_led();
+
+}
+ 
+
+
+/*
 int main (void)
 {
     sei(); 
@@ -536,7 +577,7 @@ int main (void)
 
     DDRB = 0xff;     
  
-    USART_Init(MYUBRR);
+    init_uart(MYUBRR);
     
     millis_resume();
     
@@ -550,4 +591,5 @@ int main (void)
     }
     
 } 
+*/
 

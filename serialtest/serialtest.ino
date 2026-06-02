@@ -5,12 +5,13 @@
     Modified Keith Legg        May 2026 
      
     
-    Keith made this just to understand the serial protocol. It does not work.
+    Keith made (reduced) this just to understand the serial protocol. It does not work.
 
 
 
     The Send and receive Protocol is <Signal><PinNumber>:<Pin State>
-    To begin Transmitting Ready is send out and expects to receive E: to establish connection. 
+
+    To begin Transmitting Ready (E0:0) is sent out and expects to receive E: to establish connection. 
     Afterwards Data is exchanged.
     Data is only sent everytime it changes once.
 
@@ -18,8 +19,9 @@
     Outputs                   = 'O' -read only   -Pin State: 0,1
     Communication Status      = 'E' -read/Write  -Pin State: 0:0
 
-    Command 'E0:0' is used for connectivity checks and is send every 5 seconds as keep alive signal. 
-    If the Signal is not received again, the Status LED will Flash.
+    Command 'E0:0' is used for connectivity checks and is sent every 5 seconds as keep the signal alive.
+
+    If the signal is not received again, the Status LED will Flash.
     The Board will still work as usual and try to send it's data, so this feature is only to inform the User.
 
 
@@ -42,38 +44,39 @@
 #define STATE_VALUE 2
 
 #define DEBUG
+#define OUTPUTS
 
 
-const int timeout       = 10000;   // timeout after 10 sec not receiving Stuff
-const int debounceDelay = 50;
+const uint8_t timeout       = 10000;   // timeout after 10 sec not receiving Stuff
+const uint8_t debounceDelay = 50;
 
 unsigned long oldmillis = 0;
 unsigned long newcom    = 0;
 unsigned long lastcom   = 0;
-int connectionState     = 0;
+uint8_t connectionState     = 0;
 
 unsigned char state = STATE_CMD;
+unsigned char bufferIndex = 0;
 
 char inputbuffer[5];
-
-unsigned char bufferIndex = 0;
 char cmd         = 0;
+
 uint16_t io      = 0;
 uint16_t value   = 0;
 
 
 
-const int Inputs = 2;               //number of inputs using internal Pullup resistor. (short to ground to trigger)
-int InPinmap[] = {8,9};
+const uint8_t Inputs = 2;               //number of inputs using internal Pullup resistor. (short to ground to trigger)
+uint8_t InPinmap[] = {8,9};
 
-int InState[Inputs];
-int oldInState[Inputs];
+uint8_t InState[Inputs];
+uint8_t oldInState[Inputs];
 unsigned long lastInputDebounce[Inputs];
 
 //***************************//
 
 // Function Prototypes
-void readCommands();
+void read_serial_com();
 void commandReceived(char cmd, uint16_t io, uint16_t value);
 
 void readsInputs();
@@ -82,7 +85,7 @@ void readInputs();
 
 
 void flushSerial();
-void sendData(char sig, int pin, int state);
+void sendData(char sig, uint8_t pin, uint8_t state);
 void reconnect();
 void comalive();
 
@@ -102,7 +105,7 @@ void setup()
 //***************************//
 void loop() {
 
-    readCommands();  //receive and execute Commands
+    read_serial_com();  //receive and execute Commands
     comalive();      //if nothing is received for 10 sec. blink warning LED
 
 
@@ -117,7 +120,7 @@ void comalive()
     { 
         while (lastcom == 0)
         {
-            readCommands();
+            read_serial_com();
             flushSerial();
             Serial.println("E0:0");
             delay(200);
@@ -164,7 +167,7 @@ void reconnect()
 }
 
 //***************************//
-void sendData(char sig, int pin, int state)
+void sendData(char sig, uint8_t pin, uint8_t state)
 {
     Serial.print(sig);
     Serial.print(pin);
@@ -182,12 +185,12 @@ void flushSerial()
 }
 
 
-
+//***************************//
 void readInputs()
 {
-    for(int i= 0;i<Inputs; i++)
+    for(uint8_t i= 0;i<Inputs; i++)
     {
-      int State = digitalRead(InPinmap[i]);
+      uint8_t State = digitalRead(InPinmap[i]);
       if(InState[i]!= State && millis()- lastInputDebounce[i] > debounceDelay)
       {
           InState[i] = State;
@@ -210,6 +213,15 @@ void commandReceived(char cmd, uint16_t io, uint16_t value)
         }
     #endif
 
+    #ifdef DEBUG
+        Serial.print("I Received: ");
+        Serial.print(cmd);
+        Serial.print(" ");
+        Serial.print(io);
+        Serial.print(" : ");
+        Serial.println(value);
+    #endif
+
     if(cmd == 'E')
     {
         lastcom=millis();
@@ -219,17 +231,11 @@ void commandReceived(char cmd, uint16_t io, uint16_t value)
         }
     }
 
-    #ifdef DEBUG
-        Serial.print("I Received: ");
-        Serial.print(cmd);
-        Serial.print(io);
-        Serial.print(":");
-        Serial.println(value);
-    #endif
 }
 
 //***************************//
-void readCommands()
+//was readcommands()
+void read_serial_com()
 {
     unsigned char current;
 
@@ -240,9 +246,20 @@ void readCommands()
         switch(state)
         {
             case STATE_CMD:
-               cmd = current;
-               state = STATE_IO;
-               bufferIndex = 0;
+                cmd = current;
+                state = STATE_IO;
+                bufferIndex = 0;
+
+                #ifdef DEBUG
+                    unsigned char xxx;
+
+                    //itoa(current, xxx, 10);
+
+                    Serial.print("STATE CMD: ");
+                    //Serial.println(xxx);          
+                    Serial.println(current);
+                #endif               
+
             break;
             
             case STATE_IO:
@@ -257,13 +274,13 @@ void readCommands()
                     bufferIndex = 0;
 
                 }
-                else
-                {
+                //else
+               // {
                     #ifdef DEBUG
                         Serial.print("STATE IO: ");
                         Serial.println(current);
                     #endif
-                }
+               // }
             break;
             
             case STATE_VALUE:
@@ -278,13 +295,14 @@ void readCommands()
                     commandReceived(cmd, io, value);
                     state = STATE_CMD;
                 }
-                else
-                {
+                //else
+                //{
                   #ifdef DEBUG
                       Serial.print("STATE VALUE: ");
+                
                       Serial.println(current);
                   #endif
-                }
+               // }
             break;
         }
 

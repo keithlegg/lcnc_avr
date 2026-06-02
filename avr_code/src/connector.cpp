@@ -81,10 +81,10 @@ Communication Status      = 'E' -read/Write  -Pin State: 0:0
 #define STATE_IO 1
 #define STATE_VALUE 2
 
-//#define DEBUG
+#define DEBUG
 
-#define INPUTS 
-#define OUTPUTS 
+//#define INPUTS 
+//#define OUTPUTS 
 //#define SINPUTS 
 //#define STATUSLED
 
@@ -268,6 +268,25 @@ void comalive()
             println("first connect");
         #endif
     }
+
+
+    if(millis() - lastcom > timeout)
+    {
+
+        if(connectionState == 1)
+        {
+          #ifdef DEBUG
+              println("disconnected");
+          #endif
+          connectionState = 2;
+        }
+
+    }
+    else
+    {
+        connectionState=1;
+    }
+
 }
 
 
@@ -420,6 +439,9 @@ void commandReceived(char cmd, uint16_t io, uint16_t value)
         UART_transmit(io);
         UART_write_str(":");
         UART_transmit(value);
+
+        UART_transmit(0x0a);
+        UART_transmit(0x0d);        
     #endif
      
 }
@@ -433,8 +455,10 @@ void readCommands()
      
     //while(Serial.available() > 0)
     //{
-        UART_receive_stream(&current);
         
+        //UART_receive_stream(&current);
+        current = UART_receive();        
+
         switch(state)
         {
             case STATE_CMD:
@@ -460,7 +484,7 @@ void readCommands()
                 else
                 {
                     #ifdef DEBUG
-                        println("german debug: ");
+                        println("STATE IO: ");
                         println(current);
                     #endif
                 }
@@ -479,18 +503,16 @@ void readCommands()
                     value = atoi(inputbuffer);
                
                     commandReceived(cmd, io, value);
-
-                    
+                
 
                     state = STATE_CMD;
                 }
                 else
                 {
-                  #ifdef DEBUG
-                      //UART_write_str("Ungültiges zeichen: ");
-                      //UART_transmit(current);
-                  #endif
-
+                    #ifdef DEBUG
+                        println("STATE CMD: ");
+                        println(current);
+                    #endif
                 }
             break;
         }
@@ -523,25 +545,7 @@ int main (void)
 
     while (1)
     {
-        //loop();
-
-        //num = UART_receive_stream(&eee); 
-        //print_byte_16(1111);
-        UART_transmit16(1111);
-
-        //00000100 01010111
-
-        UART_transmit(0x0a);
-        UART_transmit(0x0d);
-
-
-        //if(sizeof(current)>5)
-        //{
-        //    UART_write_str(sizeof(current));
-        //    
-        //} 
-
-        _delay_ms(800); 
+        loop();
 
     }
     

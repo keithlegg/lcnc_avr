@@ -367,9 +367,9 @@ void reconnect()
             {
                 InState[i] = State;
                 //send_data('I',InPinmap[i],InState[i]);
-                UART_transmit('I');
-                UART_transmit(InPinmap[i]);
-                UART_transmit(InState[i]);                
+                uart_transmit('I');
+                uart_transmit(InPinmap[i]);
+                uart_transmit(InState[i]);                
                 
                 lastInputDebounce[i] = millis();
             }
@@ -434,14 +434,14 @@ void commandReceived(char cmd, uint16_t io, uint16_t value)
 
 
     #ifdef DEBUG
-        UART_write_str("I Received= ");
-        UART_transmit(cmd);
-        UART_transmit(io);
-        UART_write_str(":");
-        UART_transmit(value);
+        uart_write_str("I Received= ");
+        uart_transmit(cmd);
+        uart_transmit(io);
+        uart_write_str(":");
+        uart_transmit(value);
 
-        UART_transmit(0x0a);
-        UART_transmit(0x0d);        
+        uart_transmit(0x0a);
+        uart_transmit(0x0d);        
     #endif
      
 }
@@ -457,7 +457,7 @@ void readCommands()
     //{
         
         //UART_receive_stream(&current);
-        current = UART_receive();        
+        current = uart_receive();        
 
         switch(state)
         {
@@ -561,7 +561,19 @@ ISR(USART0_RX_vect)
         UDR1 = ReceivedByte; // Echo back the received byte back to the computer
     */
 
+
+    // reading the register resets the interrupt!
+    char received_data = UDR0;
+
+    //if you want to echo it back 
+    //while ( !( UCSR0A & (1<<UDRE0)) );    
+    //UDR0 = received_data;
+    
+
     debug_led();
+    
+    //UCSR0B &= ~(1 << UDRIE0);
+
 
 }
  

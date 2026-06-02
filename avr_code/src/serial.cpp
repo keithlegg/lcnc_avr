@@ -104,7 +104,7 @@ void debug_led(void)
 /***********************************************/
 
 
-void UART_write_str(const char *data) 
+void uart_write_str(const char *data) 
 { 
 
     while(*data)
@@ -117,7 +117,7 @@ void UART_write_str(const char *data)
   
 
 /******/
-void UART_write_str(unsigned char *data) 
+void uart_write_str(unsigned char *data) 
 { 
 
     while(*data)
@@ -130,12 +130,12 @@ void UART_write_str(unsigned char *data)
 
 
 /******/
-void UART_write_str(char *data) 
+void uart_write_str(char *data) 
 { 
     int i =0;
     while (data[i] != 0x00)
     {
-        UART_transmit(data[i]);
+        uart_transmit(data[i]);
         i++;
     }
 
@@ -145,7 +145,7 @@ void UART_write_str(char *data)
 /***********************************************/
 //this sends data from flash to uart 
 
-void UART_write_str_pgm(const char* s)
+void uart_write_str_pgm(const char* s)
 {
     uint8_t c;
 
@@ -163,47 +163,47 @@ void UART_write_str_pgm(const char* s)
 /***********************************************/
 void println( const char* data)
 {
-    UART_write_str(data);
-    UART_transmit(0x0a);
-    UART_transmit(0x0d);
+    uart_write_str(data);
+    uart_transmit(0x0a);
+    uart_transmit(0x0d);
 }
 
 
 void println( unsigned char* data)
 {
-    UART_write_str(data);
-    UART_transmit(0x0a);
-    UART_transmit(0x0d);
+    uart_write_str(data);
+    uart_transmit(0x0a);
+    uart_transmit(0x0d);
 }
 
 void println( char data)
 {
-    UART_transmit(data);
-    UART_transmit(0x0a);
-    UART_transmit(0x0d);
+    uart_transmit(data);
+    uart_transmit(0x0a);
+    uart_transmit(0x0d);
 }
 
 
 void print( const char* data)
 {
-    UART_write_str(data);
+    uart_write_str(data);
 }
 
 
 void print( unsigned char* data)
 {
-    UART_write_str(data);
+    uart_write_str(data);
 }
 
 void print( char data)
 {
-    UART_transmit(data);
+    uart_transmit(data);
 }
 
 
 
 /***********************************************/
-void UART_transmit16( uint16_t data )
+void uart_transmit16( uint16_t data )
 {
 
 
@@ -217,7 +217,7 @@ void UART_transmit16( uint16_t data )
 
 /***********************************************/
 
-void UART_transmit( unsigned char data )
+void uart_transmit( unsigned char data )
 {
     while ( !( UCSR0A & (1<<UDRE0)) );
     UDR0 = data;
@@ -225,7 +225,7 @@ void UART_transmit( unsigned char data )
 
 
 /***********************************************/
-char UART_receive(void)
+char uart_receive(void)
 {
     while (!(UCSR0A & (1 << RXC0))) {}
     return UDR0;
@@ -234,7 +234,7 @@ char UART_receive(void)
 
 
 /***********************************************/
-uint16_t UART_receive_stream(unsigned char * pdata)
+uint16_t uart_receive_stream(unsigned char * pdata)
 {
     uint16_t numbytes = 0;
 
@@ -257,9 +257,9 @@ void print_byte( uint8_t data)
    for (i=0; i<=7; i++) {
        //if ( !!(data & (1 << ii)) ){  // LSB
        if ( !!(data & (1 << (7 - i))) ){  // MSB
-           UART_transmit( BIT_OFF );
+           uart_transmit( BIT_OFF );
        }else{
-           UART_transmit( BIT_ON );
+           uart_transmit( BIT_ON );
        }
     }
 }
@@ -272,9 +272,9 @@ void print_byte_16( uint16_t data)
    for (i=0; i<=15; i++) {
        //if ( !!(data & (1 << ii)) ){  // LSB
        if ( !!(data & (1 << (15 - i))) ){  // MSB
-           UART_transmit( BIT_OFF );
+           uart_transmit( BIT_OFF );
        }else{
-           UART_transmit( BIT_ON );
+           uart_transmit( BIT_ON );
        }
     }
 }
@@ -284,11 +284,11 @@ void print_byte_16( uint16_t data)
 //specific to the connector tool 
 void send_data(char sig, int pin, int state)
 {
-    UART_transmit(sig);
-    UART_transmit(pin);
-    UART_transmit(':');
-    UART_transmit(state);
-    UART_transmit('\n');
+    uart_transmit(sig);
+    uart_transmit(pin);
+    uart_transmit(':');
+    uart_transmit(state);
+    uart_transmit('\n');
 }
 
 /***********************************************/

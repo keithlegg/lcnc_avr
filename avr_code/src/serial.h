@@ -24,17 +24,17 @@ void init_uart( unsigned int ubrr);
 
 void debug_led( void );
 
-void UART_transmit16( uint16_t data );
+void uart_transmit16( uint16_t data );
 
-void UART_transmit( unsigned char* data );
-void UART_transmit( unsigned char data );
+void uart_transmit( unsigned char* data );
+void uart_transmit( unsigned char data );
 
 //void UART_write_str(char data); 
-void UART_write_str(char *data);
-void UART_write_str(unsigned char data); 
-void UART_write_str(const char *data);
+void uart_write_str(char *data);
+void uart_write_str(unsigned char data); 
+void uart_write_str(const char *data);
 
-void UART_write_str_pgm(const char s[]);
+void uart_write_str_pgm(const char s[]);
 
 void print( const char* data);
 void print( unsigned char* data);
@@ -47,12 +47,8 @@ void println( const char* data);
 void print_byte( uint8_t data);
 void print_byte_16( uint16_t data);
 
-
-char UART_receive(void);
-uint16_t UART_receive_stream(unsigned char * pdata);
-
-
-
+char uart_receive(void);
+uint16_t uart_receive_stream(unsigned char * pdata);
 
 
 void sendData(char sig, int pin, int state);

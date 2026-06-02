@@ -3,7 +3,12 @@
   LinuxCNC_AVR connector 
 
   Created By Alexander Richter 
+  
   Ruined by Keith Legg May 2026 
+
+  ringbuffer -> https://github.com/AndersKaloer/Ring-Buffer
+  millis     -> http://blog.zakkemble.net/millisecond-tracking-library-for-avr/
+
 
 
   This Software is used as IO Expansion for LinuxCNC. 
@@ -520,28 +525,10 @@ void readCommands()
 
     //} 
 }
- 
-
-/******************************************************/
-
-unsigned char current[100] = "";
-uint16_t num = 0;
-
-int main(void)
-{
-   init_rx_interrupts();
-   init_debug_led();
-   
-   sei();
-
-   while(1)
-   {
-      _delay_ms(100);
-
-   } 
 
 
-}
+
+////////////////////////////////////////
 
 
 /*
@@ -577,7 +564,7 @@ ISR(USART0_RX_vect)
 
 }
  
-
+////////////////////////////////////////
 
 /*
 int main (void)
@@ -605,3 +592,54 @@ int main (void)
 } 
 */
 
+////////////////////////////////////////
+/*
+// The USART receive interrupt service routine.
+// The received buffer is placed in the ring buffer.
+ISR(USART0_RX_vect) {
+  // Read received data 
+  char received_data = UDR0;
+  // Place data in ring buffer 
+  // As interrupts are disabled race conditions cannot occur here 
+  ring_buffer_queue(&usart0_recv_ring_buf, received_data);
+}
+
+// The USART transmit register empty interrupt.
+// Pops the oldest element from the queue to the send register.
+ISR(USART0_UDRE_vect) {
+  char data;
+  // Check for data in queue 
+  // As interrupts are disabled race conditions cannot occur here 
+  if(ring_buffer_dequeue(&usart0_send_ring_buf, &data) > 0) {
+    // Send oldest byte 
+    UDR0 = data;
+  } else {
+    // Nothing to send 
+    // Disable interrupt 
+    UCSR0B &= ~(1 << UDRIE0);
+  }
+}
+
+*/
+
+////////////////////////////////////////
+
+
+ 
+
+//test rx interrupt  
+
+unsigned char current[100] = "";
+uint16_t num = 0;
+int main(void)
+{
+   init_rx_interrupts();
+   init_debug_led();
+   sei();
+   while(1)
+   {
+      _delay_ms(100);
+   } 
+}
+
+ 

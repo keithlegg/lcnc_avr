@@ -23,6 +23,15 @@
 #define FALSE   0
 
 
+//---------------
+//my attempt to use ringbuffer library here 
+
+ring_buffer_size_t usart0_recv_queue_size(void);
+ring_buffer_size_t usart0_recv_dequeue(char *data);
+ 
+
+//---------------
+
 void init_debug_led(void);
 void init_rx_interrupts(void);
 void init_uart( unsigned int ubrr);

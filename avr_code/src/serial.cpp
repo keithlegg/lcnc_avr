@@ -6,7 +6,10 @@
 #include <avr/pgmspace.h>
 
 //#include <avr/interrupt.h>
-//#include <util/atomic.h>
+#include <util/atomic.h>
+
+
+ 
 
 #include <string.h>
 
@@ -17,6 +20,14 @@
 
 
 #define BUFFER_SIZE 100
+
+
+
+// Ring buffer for received data.
+ring_buffer_t usart0_recv_ring_buf;
+
+//Ring buffer for data to send.
+ring_buffer_t usart0_send_ring_buf;
 
 
 /*
@@ -61,41 +72,11 @@
 
 
  
-/*
 
 
-// Ring buffer for received data.
-ring_buffer_t usart0_recv_ring_buf;
 
-//Ring buffer for data to send.
-ring_buffer_t usart0_send_ring_buf;
-
-
-void usart0_init(void) {
-  // Disable interrupts 
-  cli();
-  // Initialize ring buffers //
-  ring_buffer_init(&usart0_recv_ring_buf);
-  ring_buffer_init(&usart0_send_ring_buf);
-  
-  // Used for enabling interrupts etc. 
-  UCSR0A = 0;
-  
-  // Enable USART0 TX and RX 
-  UCSR0B = (1 << RXEN0) | (1 << TXEN0) | (1 << RXCIE0);
-  
-  // Async USART, 8bit, no parity and 1 stop bit 
-  UCSR0C = (1 << UCSZ00) | (1 << UCSZ01);
-  
-  // 9600 Baud Rate at 16.00000 MHz 
-
-  UBRR0L = 103;
-  UBRR0H = 0;
-
-  sei();
-}
-
-ring_buffer_size_t usart0_recv_queue_size(void) {
+ring_buffer_size_t usart0_recv_queue_size(void) 
+{
   ring_buffer_size_t result;
   // Prevent race conditions 
   ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
@@ -105,15 +86,20 @@ ring_buffer_size_t usart0_recv_queue_size(void) {
   return result;
 }
 
-ring_buffer_size_t usart0_recv_dequeue(char *data) {
+
+ring_buffer_size_t usart0_recv_dequeue(char *data) 
+{
   ring_buffer_size_t result;
   // Prevent race conditions 
   ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
   {
-    result = ring_buffer_dequeue(&usart0_recv_ring_buf, data);
+      result = ring_buffer_dequeue(&usart0_recv_ring_buf, data);
   }
   return result;
 }
+
+
+/*
 
 ring_buffer_size_t usart0_recv_peek(char *data, ring_buffer_size_t index) {
   ring_buffer_size_t result;
@@ -166,21 +152,59 @@ void init_debug_led(void)
 }
 
 /***********************************************/
+
+/*
+
+    void usart0_init(void) {
+      // Disable interrupts 
+      cli();
+      // Initialize ring buffers //
+      ring_buffer_init(&usart0_recv_ring_buf);
+      ring_buffer_init(&usart0_send_ring_buf);
+      
+      // Used for enabling interrupts etc. 
+      UCSR0A = 0;
+      
+      // Enable USART0 TX and RX 
+      UCSR0B = (1 << RXEN0) | (1 << TXEN0) | (1 << RXCIE0);
+      
+      // Async USART, 8bit, no parity and 1 stop bit 
+      UCSR0C = (1 << UCSZ00) | (1 << UCSZ01);
+      
+      // 9600 Baud Rate at 16.00000 MHz 
+
+      UBRR0L = 103;
+      UBRR0H = 0;
+
+      sei();
+    }
+*/
+
 void init_uart( unsigned int ubrr)
 {
+      cli();
 
-    UBRR0H = (unsigned char)(ubrr>>8);
-    UBRR0L = (unsigned char)ubrr;
+      /* Initialize ring buffers */
+      //wrong number of args for some reason 
+      
+      //ring_buffer_init(&usart0_recv_ring_buf);
+      //ring_buffer_init(&usart0_send_ring_buf);
+      
+      /* Used for enabling interrupts etc. */
+      UCSR0A = 0;
+      /* Enable USART0 TX and RX */
+      UCSR0B = (1 << RXEN0) | (1 << TXEN0) | (1 << RXCIE0);
+      /* Async USART, 8bit, no parity and 1 stop bit */
+      UCSR0C = (1 << UCSZ00) | (1 << UCSZ01);
+    
+      UBRR0H = (unsigned char)(ubrr>>8);
+      UBRR0L = (unsigned char)ubrr;
 
-    //Enable receiver and transmitter 
-    UCSR0B = (1<<RXEN0)|(1<<TXEN0);
+ 
+      sei();
 
-
-    // Set frame format to 8 data bits, no parity, 1 stop bit
-    //UCSR2C |= (1 << UCSZ20) | (1 << UCSZ21);
-
-    // enable 2x mode
-    //UCSR0A = (1 << U2X0); 
+      // enable 2x mode
+      //UCSR0A = (1 << U2X0); 
 
 }
 
@@ -191,6 +215,8 @@ void init_rx_interrupts(void)
    // Enable TX, RX, and RX interrupt 
    //UCSR0B = (1<<TXEN0) | (1<<RXEN0) | (1<<RXCIE0);
    
+   //USART0_UDRE_vect
+
    UCSR0B = (1<<RXEN0) | (1<<RXCIE0);
    //UCSR0B |= (1<<RXCIE0);  
 

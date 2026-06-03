@@ -2,7 +2,7 @@
 PROJECT=avrconn
 
 
-SOURCES=src/serial.cpp src/millis.cpp src/connector.cpp
+SOURCES=src/serial.cpp src/millis.cpp src/connector.cpp src/ringbuffer.c
 
 
 

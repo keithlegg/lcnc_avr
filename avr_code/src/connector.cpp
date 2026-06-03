@@ -80,6 +80,11 @@ Communication Status      = 'E' -read/Write  -Pin State: 0:0
 #include "serial.h"
 
 
+// Ring buffer for received data.
+extern ring_buffer_t usart0_recv_ring_buf;
+
+//Ring buffer for data to send.
+extern ring_buffer_t usart0_send_ring_buf;
 
 
 #define STATE_CMD 0
@@ -531,37 +536,36 @@ void readCommands()
 ////////////////////////////////////////
 
 
-/*
-$0032 USART0 RX      USART0 Rx Complete
-$0034 USART0 UDRE    USART0 Data Register Empty
-$0036 USART0 TX      USART0 Tx Complete
-*/
 
-ISR(USART0_RX_vect)
+// The USART receive interrupt service routine.
+// The received buffer is placed in the ring buffer.
+ISR(USART0_RX_vect) 
 {
-    /*  
-        //println("receive interrupt occur");
-        while (!(UCSR1A & (1 << RXC1))) {};
-
-        char ReceivedByte;
-        ReceivedByte = UDR1; // Fetch the received byte value into the variable "ByteReceived"
-        UDR1 = ReceivedByte; // Echo back the received byte back to the computer
-    */
-
-
-    // reading the register resets the interrupt!
-    char received_data = UDR0;
-
-    //if you want to echo it back 
-    //while ( !( UCSR0A & (1<<UDRE0)) );    
-    //UDR0 = received_data;
-    
-
     debug_led();
     
-    //UCSR0B &= ~(1 << UDRIE0);
+    // Read received data 
+    char received_data = UDR0;
+    // Place data in ring buffer 
+    // As interrupts are disabled race conditions cannot occur here 
+    ring_buffer_queue(&usart0_recv_ring_buf, received_data);
+}
 
-
+// The USART transmit register empty interrupt.
+// Pops the oldest element from the queue to the send register.
+ISR(USART0_UDRE_vect) 
+{
+    char data;
+    // Check for data in queue 
+    // As interrupts are disabled race conditions cannot occur here 
+    if(ring_buffer_dequeue(&usart0_send_ring_buf, &data) > 0) 
+    {
+        // Send oldest byte 
+        UDR0 = data;
+    } else {
+        // Nothing to send 
+        // Disable interrupt 
+        UCSR0B &= ~(1 << UDRIE0);
+    }
 }
  
 ////////////////////////////////////////
@@ -593,42 +597,109 @@ int main (void)
 */
 
 ////////////////////////////////////////
-/*
-// The USART receive interrupt service routine.
-// The received buffer is placed in the ring buffer.
-ISR(USART0_RX_vect) {
-  // Read received data 
-  char received_data = UDR0;
-  // Place data in ring buffer 
-  // As interrupts are disabled race conditions cannot occur here 
-  ring_buffer_queue(&usart0_recv_ring_buf, received_data);
-}
-
-// The USART transmit register empty interrupt.
-// Pops the oldest element from the queue to the send register.
-ISR(USART0_UDRE_vect) {
-  char data;
-  // Check for data in queue 
-  // As interrupts are disabled race conditions cannot occur here 
-  if(ring_buffer_dequeue(&usart0_send_ring_buf, &data) > 0) {
-    // Send oldest byte 
-    UDR0 = data;
-  } else {
-    // Nothing to send 
-    // Disable interrupt 
-    UCSR0B &= ~(1 << UDRIE0);
-  }
-}
-
-*/
-
-////////////////////////////////////////
-
-
  
 
-//test rx interrupt  
 
+
+int main(void) 
+{
+
+  init_uart(MYUBRR);
+
+  int i, cnt;
+  char tmp;
+  char tmp_arr[50];
+  
+  // Create and initialize ring buffer 
+  ring_buffer_t ring_buffer;
+  char buf_arr[128];
+  ring_buffer_init(&ring_buffer, buf_arr, sizeof(buf_arr));
+  
+  // Add elements to buffer; one at a time 
+  for(i = 0; i < 100; i++) {
+      ring_buffer_queue(&ring_buffer, i);
+  }
+
+  // Verify size 
+  assert(ring_buffer_num_items(&ring_buffer) == 100);
+
+  // Peek third element 
+  cnt = ring_buffer_peek(&ring_buffer, &tmp, 3);
+  // Assert byte returned 
+  assert(cnt == 1);
+  // Assert contents 
+  assert(tmp == 3);
+
+  // Dequeue all elements 
+  for(cnt = 0; ring_buffer_dequeue(&ring_buffer, &tmp) > 0; cnt++) {
+      // Do something with buf... 
+      assert(tmp == cnt);
+      println( tmp);
+  }
+
+  // Add array 
+  ring_buffer_queue_arr(&ring_buffer, "Hello, Ring Buffer!", 20);
+
+  // Is buffer empty? 
+  assert(!ring_buffer_is_empty(&ring_buffer));
+
+  // Dequeue all elements 
+  while(ring_buffer_dequeue(&ring_buffer, &tmp) > 0) {
+      // Print contents 
+      //printf("Read: %c\n", tmp);
+  }
+  
+  // Add new array 
+  ring_buffer_queue_arr(&ring_buffer, "Hello again, Ring Buffer!", 26);
+  
+  // Dequeue array in two parts 
+  
+  println("Read:\n");
+
+  cnt = ring_buffer_dequeue_arr(&ring_buffer, tmp_arr, 13);
+  
+  println( cnt);
+
+  assert(cnt == 13);
+
+  // Add \0 termination before printing 
+  tmp_arr[13] = '\0';
+  println( tmp_arr);
+  
+  // Dequeue remaining 
+  cnt = ring_buffer_dequeue_arr(&ring_buffer, tmp_arr, 13);
+  assert(cnt == 13);
+  
+  println(tmp_arr);
+  
+
+
+
+  /* Overfill buffer */
+  for(i = 0; i < 1000; i++) {
+    ring_buffer_queue(&ring_buffer, (i % 127));
+  }
+  
+  /* Is buffer full? */
+  if(ring_buffer_is_full(&ring_buffer)) {
+    cnt = ring_buffer_num_items(&ring_buffer);
+    //printf("Buffer is full and contains %d bytes\n", cnt);
+  }
+  
+  /* Dequeue all elements */
+  while(ring_buffer_dequeue(&ring_buffer, &tmp) > 0) {
+    /* Print contents */
+    //printf("Read: 0x%02x\n", tmp);
+  }
+  
+  return 0;
+}
+
+
+
+
+/*
+//test rx interrupt  
 unsigned char current[100] = "";
 uint16_t num = 0;
 int main(void)
@@ -641,5 +712,5 @@ int main(void)
       _delay_ms(100);
    } 
 }
-
+*/
  

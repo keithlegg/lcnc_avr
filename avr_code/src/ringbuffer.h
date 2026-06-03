@@ -1,6 +1,7 @@
 #include <inttypes.h>
 #include <stddef.h>
 #include <assert.h>
+
 /**
  * @file
  * Prototypes and structures for the ring buffer module.

@@ -30,6 +30,11 @@ ring_buffer_t usart0_recv_ring_buf;
 ring_buffer_t usart0_send_ring_buf;
 
 
+char rx_buf_arr[128];
+char tx_buf_arr[128];
+
+
+
 /*
     begin()
     print()
@@ -54,11 +59,9 @@ ring_buffer_t usart0_send_ring_buf;
     setTimeout()
     write()
     serialEvent()
-*/
 
-
-/*
-    directly manipulate the bits in your C code:
+    ///////////////////
+    //directly manipulate the bits in your C code:
 
     Check if ready to send a byte     : while (!(UCSR1A & (1 << UDRE1)));
     Send data byte                    : UDR1 = my_data_byte;
@@ -71,7 +74,7 @@ ring_buffer_t usart0_send_ring_buf;
 
 
 
- 
+ /*
 
 
 
@@ -98,8 +101,6 @@ ring_buffer_size_t usart0_recv_dequeue(char *data)
   return result;
 }
 
-
-/*
 
 ring_buffer_size_t usart0_recv_peek(char *data, ring_buffer_size_t index) {
   ring_buffer_size_t result;
@@ -152,49 +153,21 @@ void init_debug_led(void)
 }
 
 /***********************************************/
-
-/*
-
-    void usart0_init(void) {
-      // Disable interrupts 
+void init_uart( unsigned int ubrr)
+{
       cli();
-      // Initialize ring buffers //
-      ring_buffer_init(&usart0_recv_ring_buf);
-      ring_buffer_init(&usart0_send_ring_buf);
-      
-      // Used for enabling interrupts etc. 
+
+      // Initialize ring buffers 
+      ring_buffer_init(&usart0_recv_ring_buf, rx_buf_arr, sizeof(rx_buf_arr));
+      ring_buffer_init(&usart0_send_ring_buf, tx_buf_arr, sizeof(tx_buf_arr));
+
+      // enabling interrupts, etc.
       UCSR0A = 0;
       
       // Enable USART0 TX and RX 
       UCSR0B = (1 << RXEN0) | (1 << TXEN0) | (1 << RXCIE0);
       
       // Async USART, 8bit, no parity and 1 stop bit 
-      UCSR0C = (1 << UCSZ00) | (1 << UCSZ01);
-      
-      // 9600 Baud Rate at 16.00000 MHz 
-
-      UBRR0L = 103;
-      UBRR0H = 0;
-
-      sei();
-    }
-*/
-
-void init_uart( unsigned int ubrr)
-{
-      cli();
-
-      /* Initialize ring buffers */
-      //wrong number of args for some reason 
-      
-      //ring_buffer_init(&usart0_recv_ring_buf);
-      //ring_buffer_init(&usart0_send_ring_buf);
-      
-      /* Used for enabling interrupts etc. */
-      UCSR0A = 0;
-      /* Enable USART0 TX and RX */
-      UCSR0B = (1 << RXEN0) | (1 << TXEN0) | (1 << RXCIE0);
-      /* Async USART, 8bit, no parity and 1 stop bit */
       UCSR0C = (1 << UCSZ00) | (1 << UCSZ01);
     
       UBRR0H = (unsigned char)(ubrr>>8);
@@ -209,6 +182,7 @@ void init_uart( unsigned int ubrr)
 }
 
 /***********************************************/
+//no need to call - this was put into uart_init()
 void init_rx_interrupts(void)
 {
 

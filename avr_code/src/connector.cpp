@@ -86,6 +86,9 @@ extern ring_buffer_t usart0_recv_ring_buf;
 //Ring buffer for data to send.
 extern ring_buffer_t usart0_send_ring_buf;
 
+extern char rx_buf_arr[128];
+extern char tx_buf_arr[128];
+
 
 #define STATE_CMD 0
 #define STATE_IO 1
@@ -541,19 +544,22 @@ void readCommands()
 // The received buffer is placed in the ring buffer.
 ISR(USART0_RX_vect) 
 {
-    debug_led();
     
     // Read received data 
     char received_data = UDR0;
     // Place data in ring buffer 
     // As interrupts are disabled race conditions cannot occur here 
     ring_buffer_queue(&usart0_recv_ring_buf, received_data);
+    
+    //debug_led();
+
 }
 
 // The USART transmit register empty interrupt.
 // Pops the oldest element from the queue to the send register.
 ISR(USART0_UDRE_vect) 
 {
+
     char data;
     // Check for data in queue 
     // As interrupts are disabled race conditions cannot occur here 
@@ -596,11 +602,48 @@ int main (void)
 } 
 */
 
-////////////////////////////////////////
+/********************************************/
+
+ 
+//test rx interrupt  
+unsigned char current[100] = "";
+uint16_t num = 0;
+char tmp;
+int main(void)
+{
+    uint8_t i, cnt;
+
+    init_uart(MYUBRR); //inits ringbuffer and interrupts too 
+
+    //init_rx_interrupts();
+    init_debug_led();
+
+    while(1)
+    {
+        //println(rx_buf_arr);
+        //uart_transmit(ring_buffer_num_items(&usart0_recv_ring_buf));
+
+            // Dequeue all elements 
+            while(ring_buffer_dequeue(&usart0_recv_ring_buf, &tmp) > 0) 
+            {
+                // Print contents 
+                print( tmp);
+            }
+        /*    
+        if(ring_buffer_num_items(&usart0_recv_ring_buf) ==5)
+        {
+        }
+        */
+
+        //ring_buffer_num_items(&ring_buffer)
+
+        //_delay_ms(100);
+    } 
+}
  
 
 
-
+/*
 int main(void) 
 {
 
@@ -611,6 +654,9 @@ int main(void)
   char tmp_arr[50];
   
   // Create and initialize ring buffer 
+  // The size of the memory buffer must be a power-of-two, 
+  // the ring buffer can contain at most `buf_size-1` bytes.
+
   ring_buffer_t ring_buffer;
   char buf_arr[128];
   ring_buffer_init(&ring_buffer, buf_arr, sizeof(buf_arr));
@@ -631,7 +677,8 @@ int main(void)
   assert(tmp == 3);
 
   // Dequeue all elements 
-  for(cnt = 0; ring_buffer_dequeue(&ring_buffer, &tmp) > 0; cnt++) {
+  for(cnt = 0; ring_buffer_dequeue(&ring_buffer, &tmp) > 0; cnt++) 
+  {
       // Do something with buf... 
       assert(tmp == cnt);
       println( tmp);
@@ -644,7 +691,8 @@ int main(void)
   assert(!ring_buffer_is_empty(&ring_buffer));
 
   // Dequeue all elements 
-  while(ring_buffer_dequeue(&ring_buffer, &tmp) > 0) {
+  while(ring_buffer_dequeue(&ring_buffer, &tmp) > 0) 
+  {
       // Print contents 
       //printf("Read: %c\n", tmp);
   }
@@ -653,13 +701,9 @@ int main(void)
   ring_buffer_queue_arr(&ring_buffer, "Hello again, Ring Buffer!", 26);
   
   // Dequeue array in two parts 
-  
   println("Read:\n");
-
   cnt = ring_buffer_dequeue_arr(&ring_buffer, tmp_arr, 13);
-  
   println( cnt);
-
   assert(cnt == 13);
 
   // Add \0 termination before printing 
@@ -671,46 +715,37 @@ int main(void)
   assert(cnt == 13);
   
   println(tmp_arr);
-  
 
-
-
-  /* Overfill buffer */
+  // Overfill buffer 
   for(i = 0; i < 1000; i++) {
-    ring_buffer_queue(&ring_buffer, (i % 127));
+      ring_buffer_queue(&ring_buffer, (i % 127));
   }
   
-  /* Is buffer full? */
-  if(ring_buffer_is_full(&ring_buffer)) {
-    cnt = ring_buffer_num_items(&ring_buffer);
-    //printf("Buffer is full and contains %d bytes\n", cnt);
+  // Is buffer full? 
+  if(ring_buffer_is_full(&ring_buffer)) 
+  {
+      cnt = ring_buffer_num_items(&ring_buffer);
+      print("Buffer is full and contains ");
+      print_byte(cnt);
+      println(" bytes\n");
+    
   }
   
-  /* Dequeue all elements */
-  while(ring_buffer_dequeue(&ring_buffer, &tmp) > 0) {
-    /* Print contents */
-    //printf("Read: 0x%02x\n", tmp);
+  // Dequeue all elements 
+  while(ring_buffer_dequeue(&ring_buffer, &tmp) > 0) 
+  {
+      // Print contents 
+      print("Read: ");
+      println(tmp);
   }
   
   return 0;
 }
-
-
-
-
-/*
-//test rx interrupt  
-unsigned char current[100] = "";
-uint16_t num = 0;
-int main(void)
-{
-   init_rx_interrupts();
-   init_debug_led();
-   sei();
-   while(1)
-   {
-      _delay_ms(100);
-   } 
-}
 */
+
+
+
+
+ 
+
  

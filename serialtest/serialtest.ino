@@ -106,7 +106,7 @@ void setup()
 void loop() {
 
     read_serial_com();  //receive and execute Commands
-    comalive();      //if nothing is received for 10 sec. blink warning LED
+    comalive();         //if nothing is received for 10 sec. blink warning LED
 
 
 }

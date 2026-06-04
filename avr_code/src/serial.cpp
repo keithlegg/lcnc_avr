@@ -72,80 +72,6 @@ char tx_buf_arr[128];
 
 
 
-
-
- /*
-
-
-
-ring_buffer_size_t usart0_recv_queue_size(void) 
-{
-  ring_buffer_size_t result;
-  // Prevent race conditions 
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-  {
-    result = ring_buffer_num_items(&usart0_recv_ring_buf);
-  }
-  return result;
-}
-
-
-ring_buffer_size_t usart0_recv_dequeue(char *data) 
-{
-  ring_buffer_size_t result;
-  // Prevent race conditions 
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-  {
-      result = ring_buffer_dequeue(&usart0_recv_ring_buf, data);
-  }
-  return result;
-}
-
-
-ring_buffer_size_t usart0_recv_peek(char *data, ring_buffer_size_t index) {
-  ring_buffer_size_t result;
-  // Prevent race conditions 
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-  {
-    result = ring_buffer_peek(&usart0_recv_ring_buf, data, index);
-  }
-  return result;
-}
-
-void usart0_send(char data) {
-  // Prevent race conditions 
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-  {
-    // Add to queue 
-    ring_buffer_queue(&usart0_send_ring_buf, data);
-    // Enable data register empty interrupt 
-    UCSR0B |= (1 << UDRIE0);
-  }
-}
-
-void usart0_send_arr(const char *data, ring_buffer_size_t size) {
-  // Prevent race conditions 
-  ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-  {
-    ring_buffer_queue_arr(&usart0_send_ring_buf, data, size);
-    // Enable data register empty interrupt 
-    UCSR0B |= (1 << UDRIE0);
-  }
-}
-
-usart_desc_t *get_usart0_descriptor(void) {
-  static usart_desc_t descriptor =
-    {
-      .usart_recv_queue_size = usart0_recv_queue_size,
-      .usart_recv_dequeue = usart0_recv_dequeue,
-      .usart_recv_peek = usart0_recv_peek,
-      .usart_send = usart0_send,
-      .usart_send_arr = usart0_send_arr
-    };
-  return &descriptor;
-}
-*/
-
 /***********************************************/
 void init_debug_led(void)
 {
@@ -325,6 +251,16 @@ void uart_transmit16( uint16_t data )
 
 /***********************************************/
 
+/*
+void uart_transmit_asint( char* data )
+{
+
+
+}
+*/
+
+/***********************************************/
+
 void uart_transmit( unsigned char data )
 {
     while ( !( UCSR0A & (1<<UDRE0)) );
@@ -389,7 +325,7 @@ void print_byte_16( uint16_t data)
 
 
 /***********************************************/
-//specific to the connector tool 
+//specific to the lcnc connector (not general serial) 
 void send_data(char sig, int pin, int state)
 {
     uart_transmit(sig);

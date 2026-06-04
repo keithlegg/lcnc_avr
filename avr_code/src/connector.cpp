@@ -94,7 +94,7 @@ extern char tx_buf_arr[128];
 #define STATE_IO 1
 #define STATE_VALUE 2
 
-//#define DEBUG
+#define DEBUG
 
 #define INPUTS 
 #define OUTPUTS 
@@ -113,11 +113,12 @@ int connectionState      = 0;
 unsigned char state = STATE_CMD;
 
 char inputbuffer[5];
-unsigned char bufferIndex = 0;
-unsigned char cmd = 0;
+uint8_t bufferIndex = 0;
+unsigned char cmd   = 0;
 
-uint16_t io = 0;
-uint16_t value = 0;
+//8 or 16?? probably 16 
+uint8_t io = 0;
+uint8_t value = 0;
 
 /***********************************************/
 
@@ -269,12 +270,13 @@ void comalive()
 
           println("E0:0");
 
-          _delay_ms(200);
+          _delay_ms(20);
 
           #ifdef STATUSLED
               StatLedErr(1000,1000);
           #endif
         }
+
         connectionState = 1;
         flushSerial();
 
@@ -309,7 +311,7 @@ void comalive()
 void reconnect()
 {
     #ifdef DEBUG
-        println("reconnected");
+        print("reconnected,");
         println("resending Data");
     #endif
 
@@ -361,16 +363,21 @@ void reconnect()
     }
 #endif
 
+
 #ifdef OUTPUTS
-    void writeOutputs(uint8_t Pin, uint8_t Stat){
-      //digitalWrite(Pin, Stat);
+    void writeOutputs(uint8_t Pin, uint8_t Stat)
+    {
+        println("writeoutputs debug");
+        //digitalWrite(Pin, Stat);
     }
 #endif
  
+
 #ifdef INPUTS
     void readInputs()
     {
-           
+        println("readinputs debug");
+
         for(int i= 0;i<Inputs; i++)
         {
             
@@ -380,11 +387,13 @@ void reconnect()
             if(InState[i]!= State && millis()- lastInputDebounce[i] > debounceDelay)
             {
                 InState[i] = State;
+                
+                /*
                 //send_data('I',InPinmap[i],InState[i]);
                 uart_transmit('I');
                 uart_transmit(InPinmap[i]);
                 uart_transmit(InState[i]);                
-                
+                */
                 lastInputDebounce[i] = millis();
             }
         } 
@@ -409,11 +418,12 @@ void reconnect()
                 // Button has been pressed
                 togglesinputs[i] = !togglesinputs[i];  // Toggle the LED state
 
-                if (togglesinputs[i]) {
-                  send_data('I',sInPinmap[i],togglesinputs[i]);  // Turn the LED on
+                if (togglesinputs[i]) 
+                {
+                    send_data('I', sInPinmap[i], togglesinputs[i]);  // Turn the LED on
                 }
                 else {
-                  send_data('I',sInPinmap[i],togglesinputs[i]);   // Turn the LED off
+                    send_data('I', sInPinmap[i], togglesinputs[i]);   // Turn the LED off
                 }
               }
               soldInState[i] = sInState[i];
@@ -428,26 +438,32 @@ void reconnect()
 
 
  
-void commandReceived(char cmd, uint16_t io, uint16_t value)
+void commandReceived(char cmd, uint8_t io, uint8_t value)
 {
      
     #ifdef OUTPUTS
-    if(cmd == 'O'){
-      writeOutputs(io,value);
-      lastcom=millis();
+        if(cmd == 'O')
+        {
+          writeOutputs(io,value);
+          lastcom=millis();
 
-    }
+        }
     #endif
 
-    if(cmd == 'E'){
-      lastcom=millis();
-      if(connectionState == 2){
-       reconnect();
-      }
+    if(cmd == 'E')
+    {
+        lastcom=millis();
+        if(connectionState == 2)
+        {
+            reconnect();
+        }
     }
 
 
     #ifdef DEBUG
+        //char tmp2;
+        //itoa(cmd, &tmp2,10);
+
         uart_write_str("I Received= ");
         uart_transmit(cmd);
         uart_transmit(io);
@@ -469,18 +485,34 @@ void readCommands()
      
     while(ring_buffer_dequeue(&usart0_recv_ring_buf, &current) > 0) 
     {
-
+        /*  
         switch(state)
         {
             case STATE_CMD:
-                   cmd = current;
-                   state = STATE_IO;
+                   cmd         = current;
+                   state       = STATE_IO;
                    bufferIndex = 0;
+                   
+                   #ifdef DEBUG
+                        print("STATE_CMD: ");
+                        println(current);
+                   #endif
+
             break;
             
             case STATE_IO:
+                #ifdef DEBUG
+                    print("STATE IO: ");
+                    println(current);
+                #endif
+
                 if(isdigit(current))
                 {
+                    //#ifdef DEBUG
+                    //    print("IS DIGIT IO: ");
+                    //    println(current);
+                    //#endif
+
                     inputbuffer[bufferIndex++] = current;
                 }else if(current == ':')
                 {
@@ -488,21 +520,25 @@ void readCommands()
 
                     io = atoi(inputbuffer);
                     
+                    #ifdef DEBUG
+                        print(" IO INT : ");
+                        println(inputbuffer);
+                        println(io);
+                    #endif
+
                     state = STATE_VALUE;
                     bufferIndex = 0;
 
                 }
-                else
-                {
-                    #ifdef DEBUG
-                        println("STATE IO: ");
-                        println(current);
-                    #endif
-                }
+ 
             break;
             
             case STATE_VALUE:
-    
+                #ifdef DEBUG
+                    print("STATE VALUE: ");
+                    println(current);
+                #endif
+
                 if(isdigit(current))
                 {
                     inputbuffer[bufferIndex++] = current;
@@ -518,16 +554,28 @@ void readCommands()
 
                     state = STATE_CMD;
                 }
-                else
-                {
-                    #ifdef DEBUG
-                        println("STATE CMD: ");
-                        println(current);
-                    #endif
-                }
+
             break;
-        }
-         
+        }*/
+
+        /*
+        -----------
+        E
+        -----------
+        0
+        -----------
+        :
+        -----------
+        0
+        */
+        
+        
+        //keith added this to debug ringbuffer  
+        println("-----------");        
+        println(current);
+        _delay_ms(10);
+        
+
     }//data in rx buffer  
 }
 
@@ -539,11 +587,14 @@ void readCommands()
 
 // The USART receive interrupt service routine.
 // The received buffer is placed in the ring buffer.
+
+
 ISR(USART0_RX_vect) 
 {
     
     // Read received data 
     char received_data = UDR0;
+
     // Place data in ring buffer 
     // As interrupts are disabled race conditions cannot occur here 
     ring_buffer_queue(&usart0_recv_ring_buf, received_data);
@@ -573,28 +624,39 @@ ISR(USART0_UDRE_vect)
  
 ////////////////////////////////////////
 
+/*
+#include <stdint.h>
+
+uint8_t ascii_to_int(const char *str) {
+    uint8_t result = 0;
+    while (*str) {
+        result = result * 10 + (int)(*str - '0');
+        str++;
+    }
+    return result;
+}
+*/
+
  
 int main (void)
 {
- 
-    millis_init();
+   
+    //DDRB = 0xff;  //may not be needed - led_init should do this 
     init_debug_led();
 
     setup();
-
-    DDRB = 0xff;     
  
     init_uart(MYUBRR);
-    
-    millis_resume();
-    
-    unsigned char eee;
 
+    millis_init(); //requires sei() - init_uart() turns this on     
+    millis_resume();
 
     while (1)
     {
         loop();
+        
 
+        _delay_ms(300);
     }
     
 } 

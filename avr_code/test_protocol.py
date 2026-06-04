@@ -7,19 +7,18 @@ import serial, time
 #   Created: Alexander Richter 2022
 # ruined: Keith Legg 2026  
 
-#   This Software is used as IO Expansion for LinuxCNC. Here i am using a Mega 2560.
-
-#   It is NOT intended for timing and security relevant IO's. Don't use it for Emergency Stops or Endstop switches!
-
+#   This is a "standalone" version of the pythons script that does not need LinuxCNC to work. 
+#  Keith made it for testing a WIP version of the firmware that is written in AVR C without the arduino libs 
 
 
 #   The Send and receive Protocol is <Signal><PinNumber>:<Pin State>
 #   To begin Transmitting Ready is send out and expects to receive E: to establish connection. 
-# Afterwards Data is exchanged.
+
+#   Afterwards Data is exchanged.
 #   Data is only send everytime it changes once.
 
 #   Inputs & Toggle Inputs    = 'I' -write only  -Pin State: 0,1
-#   Outputs                           = 'O' -read only   -Pin State: 0,1
+#   Outputs                   = 'O' -read only   -Pin State: 0,1
 
 
 
@@ -74,7 +73,7 @@ olddOutStates= [0]*Outputs
 # For DAU compatiblity we set them up seperately. 
 # Here we merge the arrays.
 
-Inputs = Inputs+ SInputs
+Inputs   = Inputs+ SInputs
 InPinmap += sInPinmap
 
 
@@ -127,15 +126,18 @@ def extract_nbr(input_str):
 
 while True:
     try:
-        data = arduino.readline().decode('utf-8')                   #read Data received from Arduino and decode it
-        
+        data = arduino.readline().decode('utf-8')  
+    
         if (DEBUG):
             print ("I received:{}".format(data))
+            #print ("I received: ", data)
+            print("-----------\n")
 
         data = data.split(":",1)
 
-        
-        print()
+        #?? why ??
+        #print() 
+
         try:
             cmd = data[0][0]
             if cmd == "":
@@ -148,49 +150,72 @@ while True:
                     io = extract_nbr(data[0])
 
                 value = extract_nbr(data[1])
-                if (DEBUG):print ("No Command!:{}.".format(cmd))
+                
+                if (DEBUG):
+                    print ("No Command!:{}.".format(cmd))
 
                 if cmd == "I":
-                    pass
+                    print("command I")
+
+                    firstcom = 1
+
+                    if value == 1:
+                        if(DEBUG):
+                            print("I1");
+                    if value == 0:
+                        if(DEBUG):
+                            print("I0");
+
 
                 elif cmd == "A":
-                    pass
+                    print("command A")
 
                 elif cmd == "L":
-                    pass
+                    print("command L")
 
                 elif cmd == "K":
-                    pass
+                    print("command K")
 
                 elif cmd == "M":
-                    pass
+                    print("command M")
                                 
                 elif cmd == "R":
-                    pass
+                    print("command R")
 
                 elif cmd == 'E':
                     arduino.write(b"E0:0\n")
-                    if (DEBUG):print("Sending E0:0 to establish contact")
-                else: pass
+                    if (DEBUG):
+                        print("Sending E0:0 to establish contact")
+                else: 
+                    pass
     
 
-        except: pass
+        except: 
+            pass
     
 
     except KeyboardInterrupt:
-        if (DEBUG):print ("Keyboard Interrupted.. BYE")
+        if (DEBUG):
+            print ("Keyboard Interrupted.. BYE")
         exit()
+
     except: 
-        if (DEBUG):print ("I received garbage")
+        if (DEBUG):
+            print ("I received garbage")
         arduino.flush()
     
     if firstcom == 1: 
-        #managageOutputs()     #if ==1: E0:0 has been exchanged, which means Arduino knows that LinuxCNC is running and starts sending and receiving Data
+        #if ==1: E0:0 has been exchanged, which means Arduino knows that LinuxCNC is running and starts sending and receiving Data
+        #managageOutputs()     
         print('debug firstcom ')
 
-    if keepAlive(event):    #keep com alive. This is send to help Arduino detect connection loss.
+    #keep com alive. This is send to help Arduino detect connection loss.
+    if keepAlive(event):    
         arduino.write(b"E:\n")
-        if (DEBUG):print("keepAlive")
+        
+        if (DEBUG):
+            print("keep alive")
+        
         event = time.time()
     
     time.sleep(0.001)   

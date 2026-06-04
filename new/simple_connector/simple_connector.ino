@@ -42,12 +42,12 @@
 #define STATE_IO 1
 #define STATE_VALUE 2
 
-//#define DEBUG
-
+#define DEBUG
 #define INPUTS              
-#define SINPUTS 
 #define OUTPUTS
-#define STATUSLED
+
+//#define SINPUTS 
+//#define STATUSLED
 
 const int timeout       = 10000;   // timeout after 10 sec not receiving Stuff
 const int debounceDelay = 50;
@@ -168,8 +168,17 @@ void setup()
 
 
 //***************************//
-void loop() {
+void loop() 
+{
 
+    /*
+    Serial.println("a");
+    Serial.println(0x42);
+    Serial.println(atoi(0x42));
+    */
+
+    
+    
     readCommands();  //receive and execute Commands
     comalive();      //if nothing is received for 10 sec. blink warning LED
 
@@ -180,6 +189,7 @@ void loop() {
     #ifdef SINPUTS
       readsInputs(); //read Inputs & send data
     #endif
+    
 
 }
 
@@ -302,6 +312,7 @@ void flushSerial()
     }
 #endif
 
+
 #ifdef OUTPUTS
     void writeOutputs(int Pin, int Stat){
       digitalWrite(Pin, Stat);
@@ -324,6 +335,7 @@ void flushSerial()
         }
     }
 #endif
+
 
 #ifdef SINPUTS
     void readsInputs()
@@ -388,6 +400,7 @@ void readCommands()
     while(Serial.available() > 0)
     {
         current = Serial.read();
+        /*
         switch(state)
         {
             case STATE_CMD:
@@ -397,6 +410,11 @@ void readCommands()
             break;
             
             case STATE_IO:
+                #ifdef DEBUG
+                    Serial.print("STATE IO : ");
+                    Serial.println(current);
+                #endif
+
                 if(isDigit(current))
                 {
                     inputbuffer[bufferIndex++] = current;
@@ -404,20 +422,26 @@ void readCommands()
                 {
                     inputbuffer[bufferIndex] = 0;
                     io = atoi(inputbuffer);
+                    
+                    #ifdef DEBUG
+                        Serial.print(" IO INT : ");
+                        Serial.println(inputbuffer);
+                        Serial.println(io);
+                    #endif
+
                     state = STATE_VALUE;
                     bufferIndex = 0;
 
                 }
-                else
-                {
-                    #ifdef DEBUG
-                        Serial.print("german debug here: ");
-                        Serial.println(current);
-                    #endif
-                }
+
             break;
             
             case STATE_VALUE:
+                #ifdef DEBUG
+                    Serial.print("STATE VALUE : ");
+                    Serial.println(current);
+                #endif
+
                 if(isDigit(current))
                 {
                     inputbuffer[bufferIndex++] = current;
@@ -429,15 +453,26 @@ void readCommands()
                     commandReceived(cmd, io, value);
                     state = STATE_CMD;
                 }
-                else
-                {
-                  #ifdef DEBUG
-                      Serial.print("german debug here: ");
-                      Serial.println(current);
-                  #endif
-                }
+
             break;
         }
+        */
+
+        /*
+        -----------
+        69
+        -----------
+        48
+        -----------
+        58
+        */
+
+        //keith added this to debug ringbuffer  
+        Serial.println("-----------");        
+        Serial.println(current);
+
+
+
 
     }
 }

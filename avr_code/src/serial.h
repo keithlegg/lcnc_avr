@@ -39,6 +39,8 @@ void init_uart( unsigned int ubrr);
 
 void debug_led( void );
 
+//void uart_transmit_asint( char* data );
+
 void uart_transmit16( uint16_t data );
 
 void uart_transmit( unsigned char* data );

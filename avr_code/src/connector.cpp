@@ -94,10 +94,11 @@ extern char tx_buf_arr[128];
 #define STATE_IO 1
 #define STATE_VALUE 2
 
-#define DEBUG
+//#define DEBUG
 
-//#define INPUTS 
-//#define OUTPUTS 
+#define INPUTS 
+#define OUTPUTS 
+
 //#define SINPUTS 
 //#define STATUSLED
 
@@ -601,7 +602,8 @@ int main (void)
 
 /********************************************/
 
- 
+///////////////////////////////////////////////////////
+
 /*
 // RINGBUFFER WITH UART EXAMPLE 
 // RECEIVE 3 bytes into a queue, print them and reset cache 
@@ -643,6 +645,7 @@ int main(void)
 }
 */ 
 
+///////////////////////////////////////////////////////
 
 /*
 //RINGBUFFER EXAMPLES 

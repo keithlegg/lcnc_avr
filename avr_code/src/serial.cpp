@@ -401,10 +401,11 @@ void send_data(char sig, int pin, int state)
 
 /***********************************************/
 void flushSerial()
-{
-    //while (Serial.available() > 0) {
-    //Serial.read();
-    //}
+{   
+    char tmp;
+    while(ring_buffer_dequeue(&usart0_recv_ring_buf, &tmp) > 0) 
+    { }
+
 }
 
 

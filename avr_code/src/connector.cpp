@@ -461,16 +461,13 @@ void commandReceived(char cmd, uint16_t io, uint16_t value)
 
 
 
+char current;
 
 void readCommands()
 {
-    unsigned char current;
      
-    //while(Serial.available() > 0)
-    //{
-        
-        //UART_receive_stream(&current);
-        current = uart_receive();        
+    while(ring_buffer_dequeue(&usart0_recv_ring_buf, &current) > 0) 
+    {
 
         switch(state)
         {
@@ -530,8 +527,7 @@ void readCommands()
             break;
         }
          
-
-    //} 
+    }//data in rx buffer  
 }
 
 
@@ -576,11 +572,12 @@ ISR(USART0_UDRE_vect)
  
 ////////////////////////////////////////
 
-/*
+ 
 int main (void)
 {
-    sei(); 
+ 
     millis_init();
+    init_debug_led();
 
     setup();
 
@@ -600,12 +597,15 @@ int main (void)
     }
     
 } 
-*/
+ 
 
 /********************************************/
 
  
-//test rx interrupt  
+/*
+// RINGBUFFER WITH UART EXAMPLE 
+// RECEIVE 3 bytes into a queue, print them and reset cache 
+
 unsigned char current[100] = "";
 uint16_t num = 0;
 char tmp;
@@ -615,35 +615,37 @@ int main(void)
 
     init_uart(MYUBRR); //inits ringbuffer and interrupts too 
 
-    //init_rx_interrupts();
     init_debug_led();
 
     while(1)
     {
-        //println(rx_buf_arr);
         //uart_transmit(ring_buffer_num_items(&usart0_recv_ring_buf));
 
-            // Dequeue all elements 
+        if(ring_buffer_num_items(&usart0_recv_ring_buf)==3)
+        {
+            //debug_led();
+            //for(uint8_t x=0;x<ring_buffer_num_items(&usart0_recv_ring_buf);x++)
+            //{  
+            //    ring_buffer_peek(&usart0_recv_ring_buf, &tmp, x);
+            //    print( tmp);
+            //}
+
+
             while(ring_buffer_dequeue(&usart0_recv_ring_buf, &tmp) > 0) 
             {
-                // Print contents 
                 print( tmp);
             }
-        /*    
-        if(ring_buffer_num_items(&usart0_recv_ring_buf) ==5)
-        {
         }
-        */
-
-        //ring_buffer_num_items(&ring_buffer)
-
-        //_delay_ms(100);
+        
+        //arbitrary pause to let things settle 
+        _delay_ms(10);
     } 
 }
- 
+*/ 
 
 
 /*
+//RINGBUFFER EXAMPLES 
 int main(void) 
 {
 

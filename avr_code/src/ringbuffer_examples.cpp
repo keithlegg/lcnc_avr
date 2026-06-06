@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////
 
-/*
+ 
 // RINGBUFFER WITH UART EXAMPLE 
 // RECEIVE 3 bytes into a queue, print them and reset cache 
 
@@ -39,11 +39,11 @@ int main(void)
         _delay_ms(10);
     } 
 }
-*/ 
+ 
 
 ///////////////////////////////////////////////////////
 
-/*
+ 
 //RINGBUFFER EXAMPLES 
 int main(void) 
 {
@@ -142,6 +142,6 @@ int main(void)
   
   return 0;
 }
-*/
+ 
 
 

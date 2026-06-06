@@ -34,8 +34,11 @@ void uart_transmit_asint( char* data );
 
 void transmit_ascii_digit( uint8_t a );
 
-void transmit_digit_ascii( uint16_t a );
-void transmit_digit_ascii( const char* a );
+void send_ascii_decimal( uint16_t a );
+void send_ascii_decimal( char* a );
+void send_ascii_decimal( const char* a );
+
+// /void send_ascii_decimal( uint8_t num );
 
 
 
@@ -55,10 +58,9 @@ void debug_led( void );
 
 void uart_transmit16( uint16_t data );
 
-//void uart_transmit( unsigned char* data );
+//void uart_transmit( char data ); 
 void uart_transmit( unsigned char data );
-//void uart_transmit( char data );
-void uart_transmit_c( char data );
+
 
 //void UART_write_str(char data); 
 void uart_write_str(char *data);
@@ -79,8 +81,7 @@ void print_byte( uint8_t data);
 void print_byte_16( uint16_t data);
 
 char uart_receive(void);
-
-//uint16_t uart_receive_stream(unsigned char * pdata);
+ 
 void flush_serial();
 
 

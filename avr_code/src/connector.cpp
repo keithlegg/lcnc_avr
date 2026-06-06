@@ -96,6 +96,7 @@ extern char tx_buf_arr[128];
 
 //#define DEBUG
 #define KEITHDEBUG
+//#define SENDOUT
 
 #define INPUTS 
 #define OUTPUTS 
@@ -103,13 +104,13 @@ extern char tx_buf_arr[128];
 //#define SINPUTS 
 //#define STATUSLED
 
-const int timeout = 10000;   // timeout after 10 sec not receiving Stuff
-const int debounceDelay = 50;
+const uint8_t timeout = 10000;   // timeout after 10 sec not receiving Stuff
+const uint8_t debounceDelay = 50;
 
 unsigned long oldmillis  = 0;
 unsigned long newcom     = 0;
 unsigned long lastcom    = 0;
-int connectionState      = 0;
+uint8_t connectionState      = 0;
 
 unsigned char state = STATE_CMD;
 
@@ -117,8 +118,8 @@ char inputbuffer[5];
 uint8_t bufferIndex = 0;
 unsigned char cmd   = 0;
 
-uint16_t io = 0;
-uint16_t value = 0;
+uint8_t io = 0;
+uint8_t value = 0;
 
 /***********************************************/
 
@@ -153,17 +154,17 @@ void send_data(char sig, uint8_t pin, uint8_t state)
  
 #ifdef INPUTS
     #define Inputs 2             
-    int InPinmap[] = {8,9};
+    uint8_t InPinmap[] = {8,9};
 #endif
  
 #ifdef SINPUTS
     #define sInputs 1            
-    int sInPinmap[] = {10};
+    uint8_t sInPinmap[] = {10};
 #endif
 
 #ifdef OUTPUTS
     #define Outputs 2              
-    int OutPinmap[] = {11,12};
+    uint8_t OutPinmap[] = {11,12};
 #endif
 
 
@@ -178,31 +179,31 @@ void send_data(char sig, uint8_t pin, uint8_t state)
 
 
 #ifdef STATUSLED
-    const int StatLedPin = 13;                //Pin for Status LED
-    const int StatLedErrDel[] = {1000,10};   //Blink Timing for Status LED Error (no connection)
-    const int DLEDSTATUSLED = 0;              //set to 1 to use Digital LED instead. set StatLedPin to the according LED number in the chain.
+    const uint8_t StatLedPin = 13;                //Pin for Status LED
+    const uint8_t StatLedErrDel[] = {1000,10};   //Blink Timing for Status LED Error (no connection)
+    const uint8_t DLEDSTATUSLED = 0;              //set to 1 to use Digital LED instead. set StatLedPin to the according LED number in the chain.
 #endif
 
  
 //Variables for Saving States
 #ifdef INPUTS
-    int InState[Inputs];
-    int oldInState[Inputs];
+    uint8_t InState[Inputs];
+    uint8_t oldInState[Inputs];
     unsigned long lastInputDebounce[Inputs];
 #endif
 
 
 #ifdef SINPUTS
-    int sInState[sInputs];
-    int soldInState[sInputs];
-    int togglesinputs[sInputs];
+    uint8_t sInState[sInputs];
+    uint8_t soldInState[sInputs];
+    uint8_t togglesinputs[sInputs];
     unsigned long lastsInputDebounce[sInputs];
 #endif
 
 
 #ifdef OUTPUTS
-    int OutState[Outputs];
-    int oldOutState[Outputs];
+    uint8_t OutState[Outputs];
+    uint8_t oldOutState[Outputs];
 #endif
 
 
@@ -258,12 +259,14 @@ void loop()
     readCommands(); //receive and execute Commands
     comalive();     //if nothing is received for 10 sec. blink warning LED
 
-    //KEEP THESE// #ifdef INPUTS
-    //KEEP THESE//   readInputs(); //read Inputs & send data
-    //KEEP THESE// #endif
-    //KEEP THESE// #ifdef SINPUTS
-    //KEEP THESE//   readsInputs(); //read Inputs & send data
-    //KEEP THESE// #endif
+    //periodically read data coming IN 
+    #ifdef INPUTS
+        readInputs(); //read Inputs & send data
+    #endif
+
+    #ifdef SINPUTS
+        readsInputs(); //read Inputs & send data
+    #endif
 
 }
 
@@ -280,8 +283,10 @@ void comalive()
         {
           readCommands();
           flush_serial();
-
-          println("E0:0");
+          
+          #ifdef SENDOUT
+              println("E0:0");
+          #endif 
 
           _delay_ms(200);
 
@@ -576,11 +581,19 @@ void readCommands()
 
         
         #ifdef KEITHDEBUG
-            //keith added this to debug ringbuffer  
-            println("-----------");        
-            //transmit_digit_ascii(current);
-            print(current);
 
+            uart_transmit( ring_buffer_num_items(&usart0_recv_ring_buf) );
+
+            //print(current);
+            send_ascii_decimal(current);
+
+            /*
+            //keith added this to debug ringbuffer  
+            print(0xff);        
+            send_ascii_decimal(current);
+            print(0xaa);
+            print(current);
+            */
         #endif 
 
         _delay_ms(10);
@@ -593,28 +606,19 @@ void readCommands()
 
 
 
-////////////////////////////////////////
-
-
-
+/***********************************/
 // The USART receive interrupt service routine.
 // The received buffer is placed in the ring buffer.
-
-
 ISR(USART0_RX_vect) 
 {
-    
-    // Read received data 
-    char received_data = UDR0;
+    //char received_data = UDR0;
 
-    // Place data in ring buffer 
+    // Read received data and place into ring buffer 
     // As interrupts are disabled race conditions cannot occur here 
-    ring_buffer_queue(&usart0_recv_ring_buf, received_data);
-    
-    //debug_led();
-
+    ring_buffer_queue(&usart0_recv_ring_buf, UDR0);
 }
 
+/***********************************/
 // The USART transmit register empty interrupt.
 // Pops the oldest element from the queue to the send register.
 ISR(USART0_UDRE_vect) 
@@ -650,17 +654,20 @@ int main (void)
     millis_init(); //requires sei() - init_uart() turns this on     
     millis_resume();
 
-    uint16_t x = 127;
+    char foo;
 
     while (1)
     {
-
- 
-        transmit_digit_ascii(x);
-        _delay_ms(300);
-        
-
         //loop();
+        
+        //foo = uart_receive();
+        //uart_transmit(foo);
+
+        send_ascii_decimal(65001);
+        //send_ascii_decimal("X");
+        uart_transmit('\n');
+
+        _delay_ms(400);
     }
     
 } 

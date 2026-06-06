@@ -108,6 +108,16 @@ void init_uart( unsigned int ubrr)
 }
 
 /***********************************************/
+void flush_serial()
+{   
+    char tmp;
+    while(ring_buffer_dequeue(&usart0_recv_ring_buf, &tmp) > 0) 
+    { }
+
+}
+
+
+/***********************************************/
 //no need to call - this was put into uart_init()
 void init_rx_interrupts(void)
 {
@@ -136,6 +146,17 @@ void debug_led(void)
 
 
 /***********************************************/
+ 
+void uart_write_str(char *data) 
+{ 
+    int i =0;
+    while (data[i] != 0x00)
+    {
+        uart_transmit(data[i]);
+        i++;
+    }
+
+}
 
 void uart_write_str(const char *data) 
 { 
@@ -162,17 +183,7 @@ void uart_write_str(unsigned char *data)
 } 
 
 
-/******/
-void uart_write_str(char *data) 
-{ 
-    int i =0;
-    while (data[i] != 0x00)
-    {
-        uart_transmit(data[i]);
-        i++;
-    }
 
-}
  
 
 
@@ -207,7 +218,6 @@ void print( const char* data)
     uart_write_str(data);
 }
 
-
 void print( unsigned char* data)
 {
     uart_write_str(data);
@@ -221,10 +231,9 @@ void print( char data)
 
 
 /***********************************************/
+//send two 8 bit bytes from a single 16 
 void uart_transmit16( uint16_t data )
 {
-
-
     while ( !( UCSR0A & (1<<UDRE0)) );
     UDR0 = data >> 8;
     
@@ -242,20 +251,24 @@ void transmit_ascii_digit( uint8_t a )
     //if (a >= '0' && a <= '9')
 
     uint8_t digit = a - '0'; //'0' is 0x30 , decimal 48
-    print(a);
+    //print(a);
+
+    uart_transmit(a);
+
 }
+
 
 /***********************************************/
 // send 3 (8 bit unsigned integer) represeting an ascii char encoding value
-void transmit_digit_ascii( uint16_t num )
+void send_ascii_decimal( uint16_t num )
 { 
-    uint8_t hundreds,tens,ones = 0;
-    uint8_t n,cnt,sum,rem = 0;
+    uint16_t n = num;
 
-    uint8_t hi = num >> 8;   
-    uint8_t lo = num & 0xFF;
+    uint8_t tenthous,thous,hundreds,tens,ones = 0;
+    uint8_t cnt,sum,rem = 0;
 
-    n = lo;
+    //uint8_t hi = num >> 8;   
+    //uint8_t lo = num & 0xFF;
 
     //chop it up, powers of 10 (up to numeric 128) 
     while(n!=0)
@@ -264,14 +277,25 @@ void transmit_digit_ascii( uint16_t num )
         if(cnt==0){ones = rem;}
         if(cnt==1){tens = rem;}
         if(cnt==2){hundreds = rem;}            
+        if(cnt==3){thous = rem;} 
+        if(cnt==4){tenthous = rem;} 
+
         n=n/10;
         cnt++;
     } 
     
     //get the original value (it got decomposed above)
-    n = lo;
-
+    n = num;
+     
     //add 48 to encode into ascii numbers 
+    if(n>=10000)
+    {
+        transmit_ascii_digit(48+tenthous);
+    } 
+    if(n>=1000)
+    {
+        transmit_ascii_digit(48+thous);
+    } 
     if(n>=100)
     {
         transmit_ascii_digit(48+hundreds);
@@ -281,12 +305,12 @@ void transmit_digit_ascii( uint16_t num )
         transmit_ascii_digit(48+tens);
     }
     transmit_ascii_digit(48+ones);
-
+    
 }
 
 /***********************************************/
 // send 3 (8 bit unsigned integer) represeting an ascii char encoding value
-void transmit_digit_ascii( const char* a )
+void send_ascii_decimal( char* a )
 { 
     uint8_t hundreds,tens,ones = 0;
     uint8_t cnt,sum,rem = 0;
@@ -318,11 +342,20 @@ void transmit_digit_ascii( const char* a )
         transmit_ascii_digit(48+tens);
     }
     transmit_ascii_digit(48+ones);
+    
+}
+
+
+/***********************************************/
+// send 3 (8 bit unsigned integer) represeting an ascii char encoding value
+void send_ascii_decimal( const char* a )
+{ 
+    send_ascii_decimal( (char *)a );
 
 }
 
 
-
+/***********************************************/
 /**
  * hex2int
  * take a hex string and convert it to a 32bit number (max 8 hex digits)
@@ -349,13 +382,13 @@ uint32_t hex2int(char *hex) {
 
 
 /***********************************************/
-
-void uart_transmit_c( char data )
+/*
+void uart_transmit( char data )
 {
     while ( !( UCSR0A & (1<<UDRE0)) );
     UDR0 = data;
 }
-
+*/
 
 void uart_transmit( unsigned char data )
 {
@@ -371,26 +404,6 @@ char uart_receive(void)
     return UDR0;
 
 }
-
-
-/***********************************************/
-/*
-//not sure this ever worked or was even started
-//im using the ringbuffer library instead, and it seems to work great 
-
-uint16_t uart_receive_stream(unsigned char * pdata)
-{
-    uint16_t numbytes = 0;
-
-    while (!(UCSR0A & (1 << RXC0))) {}
-
-    *pdata = UDR0;
-    pdata++; numbytes++;         
-
-    return numbytes;
-}
-*/
-
 
 /***********************************************/
 //this sends data from flash to uart 
@@ -442,223 +455,11 @@ void print_byte_16( uint16_t data)
 
 
 
-/***********************************************/
-void flush_serial()
-{   
-    char tmp;
-    while(ring_buffer_dequeue(&usart0_recv_ring_buf, &tmp) > 0) 
-    { }
-
-}
 
 
 
 
 
 
-
-
-/////////////////////////////////////////////////////////
-
-/*
-int uart_putchar(char, FILE *);
-int uart_getchar(FILE *);
-void uart_init(unsigned int);
-
-typedef uint8_t rbuf_data_t;
-typedef uint8_t rbuf_count_t;
-
-typedef struct {
-    rbuf_data_t buffer[80];
-    rbuf_data_t *in;
-    rbuf_data_t *out;
-    rbuf_count_t    count;
-} rbuf_t;
-
-void rbuf_init(rbuf_t *);
-rbuf_count_t rbuf_getcount(rbuf_t *);
-void rbuf_insert(rbuf_t *, const rbuf_data_t);
-rbuf_data_t rbuf_remove(rbuf_t *);
-
-volatile unsigned char rbuf_isempty(rbuf_t *);
-volatile unsigned char command;      // BOOL Command line active? 
-volatile unsigned char quit_early;   // BOOL Abort processing. 
-
-rbuf_t  rbuf;
-char line[BUFFER_SIZE];
-
-FILE uart_str = FDEV_SETUP_STREAM(uart_putchar, uart_getchar, _FDEV_SETUP_RW);
-
-void rbuf_init(rbuf_t* const buffer)
-{
-    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-        buffer->in    = buffer->buffer;
-        buffer->out   = buffer->buffer;
-        buffer->count = 0;
-    }
-    return;
-}
-
-
-rbuf_count_t rbuf_getcount(rbuf_t* const buffer)
-{
-    rbuf_count_t count;
-    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-        count = buffer->count;
-    }
-    return count;
-}
-
-
-bool rbuf_isempty(rbuf_t* buffer)
-{
-    return (rbuf_getcount(buffer) == 0);
-}
-
-
-void rbuf_insert(rbuf_t* const buffer, const rbuf_data_t data)
-{
-    *buffer->in = data;
-
-    if (++buffer->in == &buffer->buffer[BUFFER_SIZE])
-        buffer->in = buffer->buffer;
-
-    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-        buffer->count++;
-    }
-}
-
-
-rbuf_data_t rbuf_remove(rbuf_t* const buffer)
- {
-    rbuf_data_t data = *buffer->out;
-
-    if (++buffer->out == &buffer->buffer[BUFFER_SIZE])
-        buffer->out = buffer->buffer;
-
-    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
-        buffer->count--;
-    }
-
-    return data;
-}
-
-
-ISR (USART0_RX_vect)
-{
-    uint8_t c;
-    c = UDR0;
-    // If command line is active, store the character. 
-    if (command)
-        rbuf_insert(&rbuf, (rbuf_data_t) c);
-    else {  // Otherwise check to see if we need to abort. 
-        if (c == 0x03)
-            quit_early = TRUE;
-    }
-
-    return;
-}
-
-
-
-//Receive a character from the UART Rx.
-int uart_getchar(FILE *stream)
-{
-    uint8_t c;
-
-    while (rbuf_isempty(&rbuf)); // block until something's there 
-    c = rbuf_remove(&rbuf);
-    return c;
-}
-
-
- 
-// Initialize the UART to baud/bps, tx/rx, 8N1.
- 
-void uart_init(unsigned int baud)
-{
-    rbuf_init(&rbuf);
-
-    #if F_CPU < 2000000UL && defined(U2X)
-        UCSR0A = _BV(U2X);  // improve baud rate error by using 2x clk 
-        UBRR0L = (F_CPU / (8UL * baud)) - 1;
-    #else
-        UBRR0L = (F_CPU / (16UL * baud)) - 1;
-    #endif
-
-    // Clear error flags, MODbus protocol: 
-    UCSR0A=0x00;
-    // Enable TX, RX, and RX interrupt 
-    UCSR0B = (1<<TXEN0) | (1<<RXEN0) | (1<<RXCIE0);
-
-    stdout = stdin = &uart_str;
-
-    return;
-}
-
-
-// Send character c down the UART Tx, wait until tx holding register is empty.
-
-int uart_putchar(char c, FILE *stream)
-{
-    if (c == '\a') {
-        fputs("*ring*\n", stderr);
-        return 0;
-    }
-
-    if (c == '\n')
-        uart_putchar('\r', stream);
-    loop_until_bit_is_set(UCSR0A, UDRE0);
-    UDR0 = c;
-
-    return 0;
-}
-
-int main(void)
-{
-    int i;
-    char c;
-
-    sei();
-    uart_init(UART_BAUD);
-
-    printf_P(PSTR("\n\nHello World!\nType a line and see it printed back.\n"));
-    for (;;) {
-
-        command = TRUE;
-        printf_P(PSTR("> "));
-
-        c = fgetc(stdin);
-        i = 0;
-        while (i < sizeof(line)) {
-            if ((c == '\n') || (c == '\r')) {
-                line[i] = 0;
-                break;
-            }
-
-            line[i] = c;
-            i++;
-            printf("%c", c);
-            c = fgetc(stdin);
-        }
-        command = FALSE;
-
-        printf_P(PSTR("\n- "));
-
-        for (i = 0; i < strlen(line); i++) {
-            if (quit_early) {
-                printf_P(PSTR(" ABORT"));
-                break;
-            }
-            putchar(line[i]);
-            _delay_ms(300);
-        }
-        printf_P(PSTR("\n"));
-        quit_early = FALSE;
-    }
-    printf_P(PSTR("\nSomething barfed.\n"));
-    return 0;
-}
-*/
 
 

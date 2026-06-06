@@ -137,7 +137,6 @@ void debug_led(void)
 
 /***********************************************/
 
-
 void uart_write_str(const char *data) 
 { 
 
@@ -176,21 +175,6 @@ void uart_write_str(char *data)
 }
  
 
-/***********************************************/
-//this sends data from flash to uart 
-
-void uart_write_str_pgm(const char* s)
-{
-    uint8_t c;
-
-    for (uint8_t i=0; i < strlen_P(s); i++)
-    {
-        c = pgm_read_byte(&(s[i]));
-        while (( UCSR0A & (1<<UDRE0))  == 0){};
-        UDR0 = c;          
-    }
-
-}  
 
 
 
@@ -251,15 +235,89 @@ void uart_transmit16( uint16_t data )
 
 /***********************************************/
 
-/*
-void uart_transmit_asint( char* data )
-{
+//NOT DONE - EXPERIMENT 
+
+//"encode" ascii from its numeric value 
+void transmit_ascii_digit( uint8_t a )
+{ 
+    //0-9 ascii charaters are : decimal 48 - 57  
+    //if (a >= '0' && a <= '9')
+    uint8_t digit = a - '0'; //'0' is 0x30 
+    print(a);
+}
+
+/***********************************************/
+//send 3 (8 bit unsigned integer) represeting an ascii char encoding value
+void transmit_digit_ascii( const char* a )
+{ 
+
+    //atoi does not work for me!
+    //uint8_t digit = atoi(a); 
+    //print(digit);
+
+   
+    uint8_t hundreds,tens,ones = 0;
+    uint8_t cnt,sum,rem = 0;
+    
+    //cast to int 
+    uint8_t n = ((uint8_t)*a);
+    
+    //chop it up, powers of 10 
+    while(n!=0)
+    {
+        rem = n%10;
+        if(cnt==0){hundreds = rem;}
+        if(cnt==1){tens = rem;}
+        if(cnt==2){ones = rem;}            
+        n=n/10;
+        cnt++;
+    } 
+    
+    n = ((uint8_t)*a);
+
+    //add 48 to endocde into ascii numbers 
+    transmit_ascii_digit(48+ones);
+    transmit_ascii_digit(48+tens);
+    transmit_ascii_digit(48+hundreds);
 
 
 }
+
+
+
+/**
+ * hex2int
+ * take a hex string and convert it to a 32bit number (max 8 hex digits)
+ 
+ //https://stackoverflow.com/questions/28662696/convert-hexadecimal-to-decimal-in-avr-studio
+
+uint32_t hex2int(char *hex) {
+    uint32_t val = 0;
+    while (*hex) {
+        // get current character then increment
+        char byte = *hex++; 
+        // transform hex character to the 4bit equivalent number, using the ascii table indexes
+        if (byte >= '0' && byte <= '9') byte = byte - '0';
+        else if (byte >= 'a' && byte <='f') byte = byte - 'a' + 10;
+        else if (byte >= 'A' && byte <='F') byte = byte - 'A' + 10;    
+        // shift 4 to make space for new digit, and add the 4 bits of the new digit 
+        val = (val << 4) | (byte & 0xF);
+    }
+    return val;
+}
 */
 
+
+
+
 /***********************************************/
+
+void uart_transmit_c( char data )
+{
+    while ( !( UCSR0A & (1<<UDRE0)) );
+    UDR0 = data;
+}
+
 
 void uart_transmit( unsigned char data )
 {
@@ -278,6 +336,10 @@ char uart_receive(void)
 
 
 /***********************************************/
+/*
+//not sure this ever worked or was even started
+//im using the ringbuffer library instead, and it seems to work great 
+
 uint16_t uart_receive_stream(unsigned char * pdata)
 {
     uint16_t numbytes = 0;
@@ -289,7 +351,24 @@ uint16_t uart_receive_stream(unsigned char * pdata)
 
     return numbytes;
 }
+*/
 
+
+/***********************************************/
+//this sends data from flash to uart 
+
+void uart_write_str_pgm(const char* s)
+{
+    uint8_t c;
+
+    for (uint8_t i=0; i < strlen_P(s); i++)
+    {
+        c = pgm_read_byte(&(s[i]));
+        while (( UCSR0A & (1<<UDRE0))  == 0){};
+        UDR0 = c;          
+    }
+
+}  
 
 
 /***********************************************/
@@ -324,19 +403,9 @@ void print_byte_16( uint16_t data)
 }
 
 
-/***********************************************/
-//specific to the lcnc connector (not general serial) 
-void send_data(char sig, int pin, int state)
-{
-    uart_transmit(sig);
-    uart_transmit(pin);
-    uart_transmit(':');
-    uart_transmit(state);
-    uart_transmit('\n');
-}
 
 /***********************************************/
-void flushSerial()
+void flush_serial()
 {   
     char tmp;
     while(ring_buffer_dequeue(&usart0_recv_ring_buf, &tmp) > 0) 

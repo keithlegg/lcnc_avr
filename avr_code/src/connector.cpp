@@ -95,6 +95,7 @@ extern char tx_buf_arr[128];
 #define STATE_VALUE 2
 
 #define DEBUG
+//#define KEITHDEBUG
 
 #define INPUTS 
 #define OUTPUTS 
@@ -116,9 +117,8 @@ char inputbuffer[5];
 uint8_t bufferIndex = 0;
 unsigned char cmd   = 0;
 
-//8 or 16?? probably 16 
-uint8_t io = 0;
-uint8_t value = 0;
+uint16_t io = 0;
+uint16_t value = 0;
 
 /***********************************************/
 
@@ -134,9 +134,19 @@ void comalive();
  
 void writeOutputs(uint8_t Pin, uint8_t Stat);
 void StatLedErr(uint8_t offtime, uint8_t ontime);
-void send_data(char sig, uint8_t pin, uint8_t state);
+
  
 
+/***********************************************/
+
+void send_data(char sig, uint8_t pin, uint8_t state)
+{
+    uart_transmit(sig);
+    uart_transmit(pin);
+    uart_transmit(':');
+    uart_transmit(state);
+    uart_transmit('\n');
+}
 
 
 /***********************************************/
@@ -172,6 +182,7 @@ void send_data(char sig, uint8_t pin, uint8_t state);
     const int StatLedErrDel[] = {1000,10};   //Blink Timing for Status LED Error (no connection)
     const int DLEDSTATUSLED = 0;              //set to 1 to use Digital LED instead. set StatLedPin to the according LED number in the chain.
 #endif
+
  
 //Variables for Saving States
 #ifdef INPUTS
@@ -180,12 +191,14 @@ void send_data(char sig, uint8_t pin, uint8_t state);
     unsigned long lastInputDebounce[Inputs];
 #endif
 
+
 #ifdef SINPUTS
     int sInState[sInputs];
     int soldInState[sInputs];
     int togglesinputs[sInputs];
     unsigned long lastsInputDebounce[sInputs];
 #endif
+
 
 #ifdef OUTPUTS
     int OutState[Outputs];
@@ -266,11 +279,11 @@ void comalive()
         while (lastcom == 0)
         {
           readCommands();
-          flushSerial();
+          flush_serial();
 
           println("E0:0");
 
-          _delay_ms(20);
+          _delay_ms(200);
 
           #ifdef STATUSLED
               StatLedErr(1000,1000);
@@ -278,7 +291,7 @@ void comalive()
         }
 
         connectionState = 1;
-        flushSerial();
+        flush_serial();
 
         #ifdef DEBUG
             println("first connect");
@@ -438,7 +451,7 @@ void reconnect()
 
 
  
-void commandReceived(char cmd, uint8_t io, uint8_t value)
+void commandReceived(char cmd, uint16_t io, uint16_t value)
 {
      
     #ifdef OUTPUTS
@@ -478,14 +491,15 @@ void commandReceived(char cmd, uint8_t io, uint8_t value)
 
 
 
-char current;
+
 
 void readCommands()
 {
-     
+    char current;
+
     while(ring_buffer_dequeue(&usart0_recv_ring_buf, &current) > 0) 
     {
-        /*  
+           
         switch(state)
         {
             case STATE_CMD:
@@ -493,7 +507,7 @@ void readCommands()
                    state       = STATE_IO;
                    bufferIndex = 0;
                    
-                   #ifdef DEBUG
+                   #ifdef KEITHDEBUG
                         print("STATE_CMD: ");
                         println(current);
                    #endif
@@ -501,17 +515,17 @@ void readCommands()
             break;
             
             case STATE_IO:
-                #ifdef DEBUG
+                #ifdef KEITHDEBUG
                     print("STATE IO: ");
                     println(current);
                 #endif
 
                 if(isdigit(current))
                 {
-                    //#ifdef DEBUG
-                    //    print("IS DIGIT IO: ");
-                    //    println(current);
-                    //#endif
+                    #ifdef KEITHDEBUG
+                        print("IS DIGIT IO: ");
+                        println(current);
+                    #endif
 
                     inputbuffer[bufferIndex++] = current;
                 }else if(current == ':')
@@ -520,9 +534,10 @@ void readCommands()
 
                     io = atoi(inputbuffer);
                     
-                    #ifdef DEBUG
+                    #ifdef KEITHDEBUG
                         print(" IO INT : ");
                         println(inputbuffer);
+                        print(" after atoi : ");                        
                         println(io);
                     #endif
 
@@ -534,7 +549,7 @@ void readCommands()
             break;
             
             case STATE_VALUE:
-                #ifdef DEBUG
+                #ifdef KEITHDEBUG
                     print("STATE VALUE: ");
                     println(current);
                 #endif
@@ -556,7 +571,8 @@ void readCommands()
                 }
 
             break;
-        }*/
+        } 
+       
 
         /*
         -----------
@@ -569,14 +585,18 @@ void readCommands()
         0
         */
         
-        
-        //keith added this to debug ringbuffer  
-        println("-----------");        
-        println(current);
+        #ifdef KEITHDEBUG
+            //keith added this to debug ringbuffer  
+            println("-----------");        
+            println((unsigned char) current);
+        #endif 
+
         _delay_ms(10);
         
 
+
     }//data in rx buffer  
+
 }
 
 
@@ -640,7 +660,9 @@ uint8_t ascii_to_int(const char *str) {
  
 int main (void)
 {
-   
+
+
+    
     //DDRB = 0xff;  //may not be needed - led_init should do this 
     init_debug_led();
 
@@ -651,13 +673,25 @@ int main (void)
     millis_init(); //requires sei() - init_uart() turns this on     
     millis_resume();
 
+    unsigned char foo;
+     
+
     while (1)
     {
-        loop();
         
+        //transmit_ascii_digit(107);
+        //transmit_ascii_digit(101);
+
+        transmit_digit_ascii("1");
+        //print("-----"); 
+
 
         _delay_ms(300);
+
+        //loop();
+
     }
+
     
 } 
  

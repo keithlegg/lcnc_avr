@@ -43,6 +43,8 @@
 #define STATE_VALUE 2
 
 #define DEBUG
+//#define KEITHDEBUG
+
 #define INPUTS              
 #define OUTPUTS
 
@@ -396,11 +398,12 @@ void commandReceived(char cmd, uint16_t io, uint16_t value)
 void readCommands()
 {
     unsigned char current;
+    //char* current;
 
     while(Serial.available() > 0)
     {
         current = Serial.read();
-        /*
+         
         switch(state)
         {
             case STATE_CMD:
@@ -410,7 +413,7 @@ void readCommands()
             break;
             
             case STATE_IO:
-                #ifdef DEBUG
+                #ifdef KEITHDEBUG
                     Serial.print("STATE IO : ");
                     Serial.println(current);
                 #endif
@@ -423,7 +426,7 @@ void readCommands()
                     inputbuffer[bufferIndex] = 0;
                     io = atoi(inputbuffer);
                     
-                    #ifdef DEBUG
+                    #ifdef KEITHDEBUG
                         Serial.print(" IO INT : ");
                         Serial.println(inputbuffer);
                         Serial.println(io);
@@ -437,7 +440,7 @@ void readCommands()
             break;
             
             case STATE_VALUE:
-                #ifdef DEBUG
+                #ifdef KEITHDEBUG
                     Serial.print("STATE VALUE : ");
                     Serial.println(current);
                 #endif
@@ -456,7 +459,7 @@ void readCommands()
 
             break;
         }
-        */
+      
 
         /*
         -----------
@@ -466,11 +469,11 @@ void readCommands()
         -----------
         58
         */
-
-        //keith added this to debug ringbuffer  
-        Serial.println("-----------");        
-        Serial.println(current);
-
+        #ifdef KEITHDEBUG
+            //keith added this to debug ringbuffer  
+            Serial.println("-----------");        
+            Serial.println(current);
+        #endif
 
 
 

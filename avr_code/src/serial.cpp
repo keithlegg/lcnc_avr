@@ -235,9 +235,7 @@ void uart_transmit16( uint16_t data )
 
 /***********************************************/
 
-//NOT DONE - EXPERIMENT 
-
-//"encode" ascii from its numeric value 
+// "encode" ascii from its numeric value 
 void transmit_ascii_digit( uint8_t a )
 { 
     //0-9 ascii charaters are : decimal 48 - 57  
@@ -248,7 +246,46 @@ void transmit_ascii_digit( uint8_t a )
 }
 
 /***********************************************/
-//send 3 (8 bit unsigned integer) represeting an ascii char encoding value
+// send 3 (8 bit unsigned integer) represeting an ascii char encoding value
+void transmit_digit_ascii( uint16_t num )
+{ 
+    uint8_t hundreds,tens,ones = 0;
+    uint8_t n,cnt,sum,rem = 0;
+
+    uint8_t hi = num >> 8;   
+    uint8_t lo = num & 0xFF;
+
+    n = lo;
+
+    //chop it up, powers of 10 (up to numeric 128) 
+    while(n!=0)
+    {
+        rem = n%10;
+        if(cnt==0){ones = rem;}
+        if(cnt==1){tens = rem;}
+        if(cnt==2){hundreds = rem;}            
+        n=n/10;
+        cnt++;
+    } 
+    
+    //get the original value (it got decomposed above)
+    n = lo;
+
+    //add 48 to encode into ascii numbers 
+    if(n>=100)
+    {
+        transmit_ascii_digit(48+hundreds);
+    } 
+    if(n>=10)
+    {
+        transmit_ascii_digit(48+tens);
+    }
+    transmit_ascii_digit(48+ones);
+
+}
+
+/***********************************************/
+// send 3 (8 bit unsigned integer) represeting an ascii char encoding value
 void transmit_digit_ascii( const char* a )
 { 
     uint8_t hundreds,tens,ones = 0;
@@ -267,8 +304,9 @@ void transmit_digit_ascii( const char* a )
         n=n/10;
         cnt++;
     } 
-    n = ((uint8_t)*a);
     
+    //get the original value (it got decomposed above)
+    n = ((uint8_t)*a);
 
     //add 48 to encode into ascii numbers 
     if(n>=100)

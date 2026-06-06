@@ -32,9 +32,14 @@ ring_buffer_size_t usart0_recv_dequeue(char *data);
 
 void uart_transmit_asint( char* data );
 
-
 void transmit_ascii_digit( uint8_t a );
+
+void transmit_digit_ascii( uint16_t a );
 void transmit_digit_ascii( const char* a );
+
+
+
+
 
 
 //---------------

@@ -682,10 +682,9 @@ int main (void)
         //transmit_ascii_digit(107);
         //transmit_ascii_digit(101);
 
-        transmit_digit_ascii("1");
-        //print("-----"); 
-
-
+        transmit_digit_ascii("s");
+        println("-----");
+  
         _delay_ms(300);
 
         //loop();

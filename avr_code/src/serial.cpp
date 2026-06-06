@@ -242,7 +242,8 @@ void transmit_ascii_digit( uint8_t a )
 { 
     //0-9 ascii charaters are : decimal 48 - 57  
     //if (a >= '0' && a <= '9')
-    uint8_t digit = a - '0'; //'0' is 0x30 
+
+    uint8_t digit = a - '0'; //'0' is 0x30 , decimal 48
     print(a);
 }
 
@@ -250,36 +251,35 @@ void transmit_ascii_digit( uint8_t a )
 //send 3 (8 bit unsigned integer) represeting an ascii char encoding value
 void transmit_digit_ascii( const char* a )
 { 
-
-    //atoi does not work for me!
-    //uint8_t digit = atoi(a); 
-    //print(digit);
-
-   
     uint8_t hundreds,tens,ones = 0;
     uint8_t cnt,sum,rem = 0;
     
     //cast to int 
     uint8_t n = ((uint8_t)*a);
     
-    //chop it up, powers of 10 
+    //chop it up, powers of 10 (up to numeric 128) 
     while(n!=0)
     {
         rem = n%10;
-        if(cnt==0){hundreds = rem;}
+        if(cnt==0){ones = rem;}
         if(cnt==1){tens = rem;}
-        if(cnt==2){ones = rem;}            
+        if(cnt==2){hundreds = rem;}            
         n=n/10;
         cnt++;
     } 
-    
     n = ((uint8_t)*a);
+    
 
-    //add 48 to endocde into ascii numbers 
+    //add 48 to encode into ascii numbers 
+    if(n>=100)
+    {
+        transmit_ascii_digit(48+hundreds);
+    } 
+    if(n>=10)
+    {
+        transmit_ascii_digit(48+tens);
+    }
     transmit_ascii_digit(48+ones);
-    transmit_ascii_digit(48+tens);
-    transmit_ascii_digit(48+hundreds);
-
 
 }
 

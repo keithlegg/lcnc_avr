@@ -40,7 +40,7 @@ import serial, time, hal
 #   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 
-c = hal.component("avrsimple")  # name that we will cal pins from in hal
+c = hal.component("atconn")  # name that we will cal pins from in hal
 connection = '/dev/ttyACM0'   
 
 
